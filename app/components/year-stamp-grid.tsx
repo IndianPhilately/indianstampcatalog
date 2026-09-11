@@ -13,11 +13,21 @@ export default function YearStampGrid({ stamps }: YearStampGridProps) {
   const [denominationFilter, setDenominationFilter] = useState("all");
 
   const themes = useMemo(
-    () => Array.from(new Set(stamps.map((stamp) => stamp.theme).filter(Boolean))).sort(),
+    () =>
+      Array.from(
+        new Set(stamps.map((stamp) => stamp.theme).filter((value): value is string => Boolean(value)))
+      ).sort(),
     [stamps]
   );
   const denominations = useMemo(
-    () => Array.from(new Set(stamps.map((stamp) => stamp.denomination).filter(Boolean))).sort(),
+    () =>
+      Array.from(
+        new Set(
+          stamps
+            .map((stamp) => stamp.denomination)
+            .filter((value): value is string => Boolean(value))
+        )
+      ).sort(),
     [stamps]
   );
   const filteredStamps = stamps.filter(
