@@ -1,40 +1,105 @@
-import { supabase } from '../lib/supabaseClient'
+import Link from "next/link";
+import { formatDate, getHomePageData } from "../lib/catalog";
 
 export default async function Home() {
-  // Fetch first 5 stamps from Supabase
-  const { data: stamps, error } = await supabase
-    .from('stamps')
-    .select('*')
-    .limit(5)
+  const { error, years = [], latestStamp, randomStamps = [] } = await getHomePageData();
 
   if (error) {
-    return <div>Error loading stamps: {error.message}</div>
+    return <div className="content-error">Error loading catalog: {error}</div>;
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-50 dark:bg-black">
-      <main className="w-full max-w-3xl py-16 px-8">
-        <h1 className="text-3xl font-bold mb-6 text-black dark:text-zinc-50">
-          Indian Stamp Catalog
-        </h1>
-        <ul className="space-y-4">
-          {stamps?.map(stamp => (
-            <li key={stamp.id} className="p-4 border rounded bg-white dark:bg-zinc-800">
-              <p className="font-semibold">{stamp.name}</p>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Issued: {stamp.issue_date}
-              </p>
-              {stamp.image_url && (
-                <img
-                  src={stamp.image_url}
-                  alt={stamp.name}
-                  className="mt-2 h-24 object-contain"
-                />
-              )}
-            </li>
-          ))}
-        </ul>
-      </main>
+    <div className="page-shell">
+      <div className="page-wrapper">
+        <div className="main-container">
+          <h2 className="home-title">Home</h2>
+          <p>
+            This site is for Philatelists around the world who collect Indian Postal Stamps.
+            DaakTicket India is an online resource and reference for Indian postage stamps
+            since independence till the latest issues.
+          </p>
+
+          <hr className="thin-separator" />
+
+          {latestStamp ? (
+            <div>
+              <h3 className="latest-title">
+                Latest DTI addition:
+                <Link href={`/stamp/${latestStamp.id}`}>{latestStamp.name}</Link>
+              </h3>
+
+              <div className="latest-stamp">
+                {latestStamp.image_url ? (
+                  <img
+                    src={latestStamp.image_url}
+                    alt={latestStamp.name}
+                    className="stamp-image"
+                  />
+                ) : null}
+
+                <div className="stamp-description">
+                  <strong>{latestStamp.name}</strong> is a recent addition to the catalog.
+                  {latestStamp.description ? (
+                    <>
+                      {latestStamp.description.slice(0, 240)}
+                      {latestStamp.description.length > 240 ? "..." : ""}
+                    </>
+                  ) : (
+                    <span> View the full stamp details for release information and more.</span>
+                  )}
+                  <p>
+                    <Link href={`/stamp/${latestStamp.id}`}>more...</Link>
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p>No stamps available yet.</p>
+          )}
+        </div>
+
+        <aside className="year-widget">
+          <div className="year-header">Display Year</div>
+          <div className="year-list">
+            {years.map((year) => (
+              <Link key={year} href={`/year/${year}`}>
+                {year}
+              </Link>
+            ))}
+          </div>
+        </aside>
+      </div>
+
+      {randomStamps.length > 0 ? (
+        <div className="bottom-slider">
+          <div className="slider-wrapper">
+            {randomStamps.map((stamp, index) => (
+              <div key={stamp.id} className={`slide${index === 0 ? " active" : ""}`}>
+                <div className="slide-left">
+                  {stamp.image_url ? (
+                    <img src={stamp.image_url} alt={stamp.name} className="slide-stamp" />
+                  ) : null}
+                </div>
+
+                <div className="slide-right">
+                  <div className="slide-info">
+                    <span className="slide-title">{stamp.name}</span>
+                    <p>
+                      {formatDate(stamp.issue_date)}
+                      {stamp.denomination ? ` | ${stamp.denomination}` : ""}
+                    </p>
+                  </div>
+                  <div className="slide-footer">
+                    <Link href={`/stamp/${stamp.id}`} className="slide-btn">
+                      View full post
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
-  )
+  );
 }
