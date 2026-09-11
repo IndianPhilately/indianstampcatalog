@@ -58,11 +58,17 @@ export default function StampImageGallery({
     );
   }
 
-  function renderImage(image: GalleryImage, imageIndex: number, className: string) {
+  function renderImage(
+    image: GalleryImage,
+    imageIndex: number,
+    className: string,
+    key?: string
+  ) {
     return (
       <button
         type="button"
         className="image-lightbox-trigger"
+        key={key}
         onClick={() => setActiveIndex(imageIndex)}
         aria-label={`View larger image: ${image.alt}`}
       >
@@ -101,7 +107,7 @@ export default function StampImageGallery({
           <h3>Brochure</h3>
           <div className="extra-gallery">
             {brochures.map((image, index) =>
-              renderImage(image, brochureStartIndex + index, "extra-image")
+              renderImage(image, brochureStartIndex + index, "extra-image", `brochure-${index}`)
             )}
           </div>
         </div>

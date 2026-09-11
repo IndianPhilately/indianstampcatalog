@@ -960,7 +960,8 @@ h3 {
   .year-widget,
   .home-sidebar,
   .summary-widget,
-  .recent-widget {
+  .recent-widget,
+  .sidebar-box {
     width: 100%;
     flex-basis: auto;
   }
@@ -1023,6 +1024,21 @@ h3 {
     height: auto;
   }
 
+  .extra-gallery {
+    display: block;
+  }
+
+  .extra-gallery .image-lightbox-trigger,
+  .extra-image {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .extra-image {
+    height: auto;
+    max-height: none;
+  }
+
   .share-section {
     align-items: stretch;
   }
@@ -1034,6 +1050,42 @@ h3 {
   .share-btn {
     flex: 1 1 auto;
     justify-content: center;
+  }
+
+  .slide {
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .slide-left {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .slide-stamp {
+    max-height: 130px;
+  }
+
+  .slide-right {
+    width: 100%;
+  }
+
+  .slide-title {
+    font-size: 20px;
+    overflow-wrap: anywhere;
+  }
+
+  .slide-right p {
+    font-size: 12px;
+  }
+
+  .slide-footer {
+    position: static;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
   }
 
   .image-lightbox {
