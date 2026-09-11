@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatDate, getYearPageData } from "../../../lib/catalog";
+import YearStampGrid from "../../components/year-stamp-grid";
+import { getYearPageData } from "../../../lib/catalog";
 
 export default async function YearPage({ params }: { params: Promise<{ year: string }> }) {
   const { year } = await params;
@@ -14,6 +15,11 @@ export default async function YearPage({ params }: { params: Promise<{ year: str
     notFound();
   }
 
+  const currentYear = Number(year);
+  const currentYearIndex = years.indexOf(currentYear);
+  const previousYear = years[currentYearIndex + 1];
+  const nextYear = years[currentYearIndex - 1];
+
   return (
     <div className="page-wrapper">
       <div className="main-container">
@@ -24,29 +30,22 @@ export default async function YearPage({ params }: { params: Promise<{ year: str
               {stamps.length} {stamps.length === 1 ? "stamp" : "stamps"}
             </p>
           </div>
+          <nav className="year-navigation" aria-label="Year navigation">
+            {previousYear ? (
+              <Link href={`/year/${previousYear}`}>&larr; {previousYear}</Link>
+            ) : (
+              <span aria-disabled="true">&larr; Older</span>
+            )}
+            {nextYear ? (
+              <Link href={`/year/${nextYear}`}>{nextYear} &rarr;</Link>
+            ) : (
+              <span aria-disabled="true">Newer &rarr;</span>
+            )}
+          </nav>
         </div>
         <hr className="thin-separator" />
 
-        <div className="stamp-grid">
-          {stamps.map((stamp) => (
-            <div key={stamp.id} className="stamp-item">
-              <Link href={`/stamp/${stamp.id}`} className="stamp-link stamp-card-link">
-                {stamp.image_url ? (
-                  <img src={stamp.image_url} alt={stamp.name} />
-                ) : (
-                  <span className="stamp-image-placeholder" aria-hidden="true">
-                    Image unavailable
-                  </span>
-                )}
-                <p className="stamp-date">{formatDate(stamp.issue_date)}</p>
-                <p className="stamp-titleyear">{stamp.name}</p>
-                {stamp.denomination ? (
-                  <p className="stamp-denomination">{stamp.denomination}</p>
-                ) : null}
-              </Link>
-            </div>
-          ))}
-        </div>
+        <YearStampGrid stamps={stamps} />
       </div>
 
       <aside className="year-widget">

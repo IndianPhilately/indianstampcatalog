@@ -25,7 +25,7 @@ export type StampRecord = {
 
 export type StampYearItem = Pick<
   StampRecord,
-  "id" | "name" | "issue_date" | "denomination" | "image_url"
+  "id" | "name" | "issue_date" | "denomination" | "theme" | "image_url"
 >;
 
 export type StampAdjacentItem = Pick<
@@ -99,7 +99,7 @@ export async function getYearPageData(year: string) {
 
   const { data: stamps, error } = await supabase
     .from("stamps")
-    .select("id, name, issue_date, denomination, image_url")
+    .select("id, name, issue_date, denomination, theme, image_url")
     .gte("issue_date", `${yearNumber}-01-01`)
     .lt("issue_date", `${yearNumber + 1}-01-01`)
     .order("issue_date", { ascending: true });

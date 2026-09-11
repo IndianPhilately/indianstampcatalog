@@ -385,10 +385,83 @@ h3 {
   gap: 16px;
 }
 
+.year-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.year-navigation a,
+.year-navigation span {
+  padding: 5px 7px;
+  border: 1px solid #cdd9e5;
+  border-radius: 3px;
+  background: #f5f9fc;
+  color: #2a7bc2;
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.year-navigation a:hover,
+.year-navigation a:focus-visible {
+  border-color: #2a7bc2;
+  background: #eaf2fb;
+}
+
+.year-navigation span {
+  color: #999;
+  background: #f5f5f5;
+}
+
 .year-result-count {
   margin: -8px 0 0;
   color: #666;
   font-size: 12px;
+}
+
+.year-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 10px;
+  border: 1px solid #e1e6eb;
+  border-radius: 4px;
+  background: #fafcfe;
+}
+
+.year-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #666;
+  font-family: "Roboto", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.year-filters select {
+  min-width: 145px;
+  padding: 5px 6px;
+  border: 1px solid #cdd9e5;
+  border-radius: 3px;
+  background: #fff;
+  color: #333;
+  font-family: "Roboto", Arial, sans-serif;
+  font-size: 12px;
+}
+
+.year-filter-count {
+  margin-left: auto;
+  color: #666;
+  font-size: 11px;
+}
+
+.filter-empty {
+  margin-top: 18px;
+  color: #666;
 }
 
 .bottom-slider {
