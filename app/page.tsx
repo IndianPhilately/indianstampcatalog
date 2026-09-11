@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { formatDate, getHomePageData } from "../lib/catalog";
+import { getHomePageData } from "../lib/catalog";
+import RandomStampSlider from "./components/random-stamp-slider";
 
 export default async function Home() {
   const { error, years = [], latestStamp, randomStamps = [] } = await getHomePageData();
@@ -70,36 +71,7 @@ export default async function Home() {
         </aside>
       </div>
 
-      {randomStamps.length > 0 ? (
-        <div className="bottom-slider">
-          <div className="slider-wrapper">
-            {randomStamps.map((stamp, index) => (
-              <div key={stamp.id} className={`slide${index === 0 ? " active" : ""}`}>
-                <div className="slide-left">
-                  {stamp.image_url ? (
-                    <img src={stamp.image_url} alt={stamp.name} className="slide-stamp" />
-                  ) : null}
-                </div>
-
-                <div className="slide-right">
-                  <div className="slide-info">
-                    <span className="slide-title">{stamp.name}</span>
-                    <p>
-                      {formatDate(stamp.issue_date)}
-                      {stamp.denomination ? ` | ${stamp.denomination}` : ""}
-                    </p>
-                  </div>
-                  <div className="slide-footer">
-                    <Link href={`/stamp/${stamp.id}`} className="slide-btn">
-                      View full post
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      <RandomStampSlider stamps={randomStamps} />
     </div>
   );
 }
