@@ -142,14 +142,36 @@ export async function getStampDetails(id: string) {
     };
   }
 
-  const { data: adjacentData, error: adjacentError } = await supabase
-    .from("stamps")
-    .select("id, name, issue_date, denomination, theme, image_url")
-    .order("issue_date", { ascending: false });
+  const [previousResult, nextResult, relatedResult, yearsResult] = await Promise.all([
+    supabase
+      .from("stamps")
+      .select("id, name, issue_date, denomination, theme, image_url")
+      .lt("issue_date", stamp.issue_date)
+      .order("issue_date", { ascending: false })
+      .limit(3),
+    supabase
+      .from("stamps")
+      .select("id, name, issue_date, denomination, theme, image_url")
+      .gt("issue_date", stamp.issue_date)
+      .order("issue_date", { ascending: true })
+      .limit(3),
+    stamp.theme
+      ? supabase
+          .from("stamps")
+          .select("id, name, issue_date, denomination, theme, image_url")
+          .eq("theme", stamp.theme)
+          .neq("id", id)
+          .order("issue_date", { ascending: false })
+          .limit(3)
+      : Promise.resolve({ data: [], error: null }),
+    supabase.from("stamps").select("issue_date").order("issue_date", { ascending: false }),
+  ]);
 
-  if (adjacentError) {
+  const queryError = previousResult.error ?? nextResult.error ?? relatedResult.error ?? yearsResult.error;
+
+  if (queryError) {
     return {
-      error: adjacentError.message,
+      error: queryError.message,
       stamp: stamp as StampRecord,
       previousStamps: [] as StampAdjacentItem[],
       nextStamps: [] as StampAdjacentItem[],
@@ -158,16 +180,10 @@ export async function getStampDetails(id: string) {
     };
   }
 
-  const ordered = (adjacentData ?? []) as StampAdjacentItem[];
-
-  const currentIndex = ordered.findIndex((item) => item.id === id);
-
-  const previousStamps = ordered.slice(currentIndex + 1, currentIndex + 4);
-  const nextStamps = ordered.slice(Math.max(currentIndex - 3, 0), currentIndex).reverse();
-  const relatedStamps = ordered
-    .filter((item) => item.id !== id && item.theme === stamp?.theme)
-    .slice(0, 3);
-  const years = getYearsFromStamps(ordered);
+  const previousStamps = (previousResult.data ?? []) as StampAdjacentItem[];
+  const nextStamps = (nextResult.data ?? []) as StampAdjacentItem[];
+  const relatedStamps = (relatedResult.data ?? []) as StampAdjacentItem[];
+  const years = getYearsFromStamps((yearsResult.data ?? []) as Array<{ issue_date: string }>);
 
   return {
     error: null,
