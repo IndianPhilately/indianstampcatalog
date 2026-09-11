@@ -162,8 +162,8 @@ export async function getStampDetails(id: string) {
 
   const currentIndex = ordered.findIndex((item) => item.id === id);
 
-  const previousStamps = ordered.slice(Math.max(currentIndex - 3, 0), currentIndex).reverse();
-  const nextStamps = ordered.slice(currentIndex + 1, currentIndex + 4);
+  const previousStamps = ordered.slice(currentIndex + 1, currentIndex + 4);
+  const nextStamps = ordered.slice(Math.max(currentIndex - 3, 0), currentIndex).reverse();
   const relatedStamps = ordered
     .filter((item) => item.id !== id && item.theme === stamp?.theme)
     .slice(0, 3);
