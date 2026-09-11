@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CopyLinkButton from "../../components/copy-link-button";
+import StampImageGallery from "../../components/stamp-image-gallery";
 import { formatDate, getStampDetails } from "../../../lib/catalog";
 
 export default async function StampPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,6 +17,9 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
   }
 
   const issueYear = new Date(stamp.issue_date).getFullYear();
+  const brochureImages = [stamp.brochure_image1_url, stamp.brochure_image2_url]
+    .filter((url): url is string => Boolean(url))
+    .map((src) => ({ src, alt: `Brochure for ${stamp.name}` }));
 
   return (
     <div className="stamp-detail-layout">
@@ -24,7 +28,21 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
           <Link href={`/year/${issueYear}`} className="stamp-detail-back">
             Back to {issueYear} stamps
           </Link>
-          <h2 className="home-title">{stamp.name}</h2>
+          <div className="stamp-title-row">
+            <h2 className="home-title">{stamp.name}</h2>
+            <nav className="stamp-navigation" aria-label="Stamp navigation">
+              {previousStamps[0] ? (
+                <Link href={`/stamp/${previousStamps[0].id}`}>&larr; Previous</Link>
+              ) : (
+                <span aria-disabled="true">&larr; Previous</span>
+              )}
+              {nextStamps[0] ? (
+                <Link href={`/stamp/${nextStamps[0].id}`}>Next &rarr;</Link>
+              ) : (
+                <span aria-disabled="true">Next &rarr;</span>
+              )}
+            </nav>
+          </div>
         </div>
         <p className="stamp-meta">
           <strong>Release Date:</strong> {formatDate(stamp.issue_date)},
@@ -33,43 +51,21 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
 
         <hr className="thin-separator" />
 
-        {stamp.image_url ? (
-          <div className="stamp-image-frame">
-            <img src={stamp.image_url} alt={stamp.name} className="stamp-image-large" />
-          </div>
-        ) : null}
+        <StampImageGallery
+          primaryImage={stamp.image_url ? { src: stamp.image_url, alt: stamp.name } : null}
+          firstDayCover={
+            stamp.first_day_cover_url
+              ? {
+                  src: stamp.first_day_cover_url,
+                  alt: `First Day Cover for ${stamp.name}`,
+                }
+              : null
+          }
+          brochures={brochureImages}
+        />
 
         <h3 className="detail-section-title">About this stamp</h3>
         <div className="stamp-description" dangerouslySetInnerHTML={{ __html: stamp.description ?? "<p>No description available.</p>" }} />
-
-        {stamp.first_day_cover_url ? (
-          <div className="extra-section">
-            <h3>First Day Cover</h3>
-            <div className="extra-gallery">
-              <a href={stamp.first_day_cover_url} target="_blank" rel="noreferrer">
-                <img src={stamp.first_day_cover_url} alt={`First Day Cover for ${stamp.name}`} className="extra-image" />
-              </a>
-            </div>
-          </div>
-        ) : null}
-
-        {(stamp.brochure_image1_url || stamp.brochure_image2_url) ? (
-          <div className="extra-section">
-            <h3>Brochure</h3>
-            <div className="extra-gallery">
-              {stamp.brochure_image1_url ? (
-                <a href={stamp.brochure_image1_url} target="_blank" rel="noreferrer">
-                  <img src={stamp.brochure_image1_url} alt={`Brochure for ${stamp.name}`} className="extra-image" />
-                </a>
-              ) : null}
-              {stamp.brochure_image2_url ? (
-                <a href={stamp.brochure_image2_url} target="_blank" rel="noreferrer">
-                  <img src={stamp.brochure_image2_url} alt={`Brochure for ${stamp.name}`} className="extra-image" />
-                </a>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
 
         <hr className="thin-separator" />
 
