@@ -62,10 +62,15 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
               : null
           }
           brochures={brochureImages}
-        />
-
-        <h3 className="detail-section-title">About this stamp</h3>
-        <div className="stamp-description" dangerouslySetInnerHTML={{ __html: stamp.description ?? "<p>No description available.</p>" }} />
+        >
+          <h3 className="detail-section-title">About this stamp</h3>
+          <div
+            className="stamp-description"
+            dangerouslySetInnerHTML={{
+              __html: stamp.description ?? "<p>No description available.</p>",
+            }}
+          />
+        </StampImageGallery>
 
         <hr className="thin-separator" />
 

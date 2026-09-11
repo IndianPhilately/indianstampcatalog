@@ -48,9 +48,6 @@ export default function RandomStampSlider({ stamps }: RandomStampSliderProps) {
                 {formatDate(stamp.issue_date)}
                 {stamp.denomination ? ` | ${stamp.denomination}` : ""}
               </p>
-              {stamp.description ? (
-                <p className="slide-description">{stamp.description}</p>
-              ) : null}
             </div>
             <div className="slide-footer">
               <Link href={`/stamp/${stamp.id}`} className="slide-btn">

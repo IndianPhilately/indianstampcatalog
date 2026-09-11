@@ -191,17 +191,28 @@ h3 {
 }
 
 .latest-stamp {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
   margin-top: 10px;
 }
 
 .latest-stamp .stamp-image {
+  float: left;
   width: 250px;
   max-width: 100%;
+  margin: 0 20px 10px 0;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+.latest-stamp::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+.latest-stamp .stamp-description {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  white-space: pre-line;
 }
 
 .stamp-description {
@@ -724,7 +735,7 @@ h3 {
 }
 
 .stamp-description {
-  font-size: 0.9rem;
+  font-size: 12px;
   color: #333333;
   line-height: 1.6;
 }
@@ -746,8 +757,8 @@ h3 {
 
 .extra-image {
   display: block;
-  max-width: 220px;
-  max-height: 260px;
+  max-width: 320px;
+  max-height: 320px;
   object-fit: contain;
   border: 1px solid #ccc;
   background: #f1f4f7;
@@ -963,7 +974,13 @@ h3 {
   }
 
   .latest-stamp {
+    display: flex;
     flex-direction: column;
+  }
+
+  .latest-stamp .stamp-image {
+    float: none;
+    margin: 0 0 10px;
   }
 
   .stamp-title-row {

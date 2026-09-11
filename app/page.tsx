@@ -49,15 +49,14 @@ export default async function Home() {
                   <strong>{latestStamp.name}</strong> is a recent addition to the catalog.
                   {latestStamp.description ? (
                     <>
-                      {latestStamp.description.slice(0, 240)}
-                      {latestStamp.description.length > 240 ? "..." : ""}
+                      {latestStamp.description.slice(0, 960)}
+                      {latestStamp.description.length > 960 ? "..." : ""}
                     </>
                   ) : (
                     <span> View the full stamp details for release information and more.</span>
                   )}
-                  <p>
-                    <Link href={`/stamp/${latestStamp.id}`}>more...</Link>
-                  </p>
+                  {latestStamp.description ? " " : null}
+                  <Link href={`/stamp/${latestStamp.id}`}>[more]</Link>
                 </div>
               </div>
             </div>

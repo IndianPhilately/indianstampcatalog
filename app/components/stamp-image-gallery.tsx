@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 
 type GalleryImage = {
   src: string;
@@ -11,12 +12,14 @@ type StampImageGalleryProps = {
   primaryImage: GalleryImage | null;
   firstDayCover: GalleryImage | null;
   brochures: GalleryImage[];
+  children?: ReactNode;
 };
 
 export default function StampImageGallery({
   primaryImage,
   firstDayCover,
   brochures,
+  children,
 }: StampImageGalleryProps) {
   const images = [primaryImage, firstDayCover, ...brochures].filter(
     (image): image is GalleryImage => image !== null
@@ -79,6 +82,10 @@ export default function StampImageGallery({
           {renderImage(primaryImage, primaryIndex, "stamp-image-large")}
         </div>
       ) : null}
+
+      {children}
+
+      {firstDayCover || brochures.length ? <hr className="thin-separator" /> : null}
 
       {firstDayCover ? (
         <div className="extra-section">
