@@ -4,7 +4,7 @@ import { formatDate, getStampDetails } from "../../../lib/catalog";
 
 export default async function StampPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { error, stamp, previousStamps, nextStamps, relatedStamps } = await getStampDetails(id);
+  const { error, stamp, previousStamps, nextStamps, relatedStamps, years } = await getStampDetails(id);
 
   if (error) {
     throw new Error(error);
@@ -94,6 +94,22 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <aside className="sidebar-box">
+        <div className="year-widget detail-year-widget">
+          <div className="year-header">Display Year</div>
+          <div className="year-list">
+            {years.map((year) => (
+              <Link
+                key={year}
+                href={`/year/${year}`}
+                className={year === issueYear ? "active-year" : undefined}
+                aria-current={year === issueYear ? "page" : undefined}
+              >
+                {year}
+              </Link>
+            ))}
+          </div>
+        </div>
+
         <div className="sidebar-section">
           <div className="sidebar-header">Previous Issues</div>
           <div className="issue-list">

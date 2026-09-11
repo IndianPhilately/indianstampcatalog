@@ -138,6 +138,7 @@ export async function getStampDetails(id: string) {
       previousStamps: [] as StampAdjacentItem[],
       nextStamps: [] as StampAdjacentItem[],
       relatedStamps: [] as StampAdjacentItem[],
+      years: [] as number[],
     };
   }
 
@@ -153,6 +154,7 @@ export async function getStampDetails(id: string) {
       previousStamps: [] as StampAdjacentItem[],
       nextStamps: [] as StampAdjacentItem[],
       relatedStamps: [] as StampAdjacentItem[],
+      years: [] as number[],
     };
   }
 
@@ -165,6 +167,7 @@ export async function getStampDetails(id: string) {
   const relatedStamps = ordered
     .filter((item) => item.id !== id && item.theme === stamp?.theme)
     .slice(0, 3);
+  const years = getYearsFromStamps(ordered);
 
   return {
     error: null,
@@ -172,6 +175,7 @@ export async function getStampDetails(id: string) {
     previousStamps,
     nextStamps,
     relatedStamps,
+    years,
   };
 }
 

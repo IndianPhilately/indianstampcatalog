@@ -221,6 +221,10 @@ h3 {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
+.detail-year-widget {
+  margin-top: 0;
+}
+
 .year-header {
   background-color: #2a7bc2;
   color: white;
@@ -540,14 +544,17 @@ h3 {
 
 .sidebar-box {
   flex: 0 0 240px;
-  background-color: #f5f9fc;
-  border: 1px solid #cdd9e5;
-  border-radius: 4px;
-  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .sidebar-section {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  background-color: #f5f9fc;
+  border: 1px solid #cdd9e5;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .sidebar-header {
