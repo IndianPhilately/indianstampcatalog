@@ -981,6 +981,61 @@ h3 {
     gap: 4px;
   }
 
+  .search-bar form {
+    display: flex;
+  }
+
+  .search-bar input {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .home-title,
+  .latest-title {
+    overflow-wrap: anywhere;
+  }
+
+  .stamp-navigation,
+  .year-navigation {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .stamp-navigation a,
+  .stamp-navigation span,
+  .year-navigation a,
+  .year-navigation span {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .stamp-meta {
+    overflow-wrap: anywhere;
+  }
+
+  .stamp-image-frame {
+    min-height: 0;
+  }
+
+  .stamp-image-large {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .share-section {
+    align-items: stretch;
+  }
+
+  .share-label {
+    flex-basis: 100%;
+  }
+
+  .share-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
   .image-lightbox {
     padding: 44px 46px;
   }
