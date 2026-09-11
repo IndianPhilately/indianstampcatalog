@@ -34,7 +34,7 @@ export default async function Home() {
           {latestStamp ? (
             <div>
               <h3 className="latest-title">
-                Latest DTI addition:
+                Latest Addition:{" "}
                 <Link href={`/stamp/${latestStamp.id}`}>{latestStamp.name}</Link>
               </h3>
 
