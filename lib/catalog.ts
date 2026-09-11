@@ -70,8 +70,10 @@ export async function getHomePageData() {
   if (error) {
     return {
       error: error.message,
+      stampCount: 0,
       years: [] as number[],
       latestStamp: null as StampSummary | null,
+      recentStamps: [] as StampSummary[],
       randomStamps: [] as StampSummary[],
     };
   }
@@ -80,8 +82,10 @@ export async function getHomePageData() {
 
   return {
     error: null,
+    stampCount: catalogStamps.length,
     years: getYearsFromStamps(catalogStamps),
     latestStamp: catalogStamps[0] ?? null,
+    recentStamps: catalogStamps.slice(1, 4),
     randomStamps: [...catalogStamps].sort(() => Math.random() - 0.5).slice(0, 5),
   };
 }
