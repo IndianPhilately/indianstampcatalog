@@ -429,12 +429,32 @@ h3 {
 
 .stamp-detail-layout {
   display: flex;
-  justify-content: space-between;
-  gap: 24px;
+  align-items: flex-start;
+  gap: 18px;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 4px;
 }
 
 .stamp-detail-content {
-  width: 70%;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stamp-detail-header {
+  margin-bottom: 6px;
+}
+
+.stamp-detail-back {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #2a7bc2;
+  text-decoration: none;
+  font-size: 11px;
+}
+
+.stamp-detail-back:hover {
+  text-decoration: underline;
 }
 
 .stamp-meta {
@@ -444,9 +464,28 @@ h3 {
 }
 
 .stamp-image-large {
+  display: block;
+  width: auto;
   max-width: 420px;
-  margin-bottom: 15px;
+  max-height: 520px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.stamp-image-frame {
+  display: flex;
+  justify-content: center;
+  min-height: 220px;
+  margin-bottom: 20px;
+  padding: 14px;
   border: 1px solid #ccc;
+  background: #f1f4f7;
+}
+
+.detail-section-title {
+  margin: 0 0 10px;
+  color: #333;
+  font-size: 1.1rem;
 }
 
 .stamp-description {
@@ -464,10 +503,19 @@ h3 {
   font-size: 1.1rem;
 }
 
+.extra-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .extra-image {
+  display: block;
   max-width: 220px;
+  max-height: 260px;
+  object-fit: contain;
   border: 1px solid #ccc;
-  margin-bottom: 12px;
+  background: #f1f4f7;
 }
 
 .share-section {
@@ -491,6 +539,7 @@ h3 {
 }
 
 .sidebar-box {
+  flex: 0 0 240px;
   background-color: #f5f9fc;
   border: 1px solid #cdd9e5;
   border-radius: 4px;

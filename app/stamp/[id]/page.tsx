@@ -14,10 +14,17 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
     notFound();
   }
 
+  const issueYear = new Date(stamp.issue_date).getFullYear();
+
   return (
     <div className="stamp-detail-layout">
       <div className="stamp-detail-content main-container">
-        <h2 className="home-title">{stamp.name}</h2>
+        <div className="stamp-detail-header">
+          <Link href={`/year/${issueYear}`} className="stamp-detail-back">
+            Back to {issueYear} stamps
+          </Link>
+          <h2 className="home-title">{stamp.name}</h2>
+        </div>
         <p className="stamp-meta">
           <strong>Release Date:</strong> {formatDate(stamp.issue_date)},
           <strong> Denomination:</strong> {stamp.denomination ?? "N/A"}
@@ -26,33 +33,40 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
         <hr className="thin-separator" />
 
         {stamp.image_url ? (
-          <img src={stamp.image_url} alt={stamp.name} className="stamp-image-large" />
+          <div className="stamp-image-frame">
+            <img src={stamp.image_url} alt={stamp.name} className="stamp-image-large" />
+          </div>
         ) : null}
 
+        <h3 className="detail-section-title">About this stamp</h3>
         <div className="stamp-description" dangerouslySetInnerHTML={{ __html: stamp.description ?? "<p>No description available.</p>" }} />
 
         {stamp.first_day_cover_url ? (
           <div className="extra-section">
             <h3>First Day Cover</h3>
-            <a href={stamp.first_day_cover_url} target="_blank" rel="noreferrer">
-              <img src={stamp.first_day_cover_url} alt={`First Day Cover for ${stamp.name}`} className="extra-image" />
-            </a>
+            <div className="extra-gallery">
+              <a href={stamp.first_day_cover_url} target="_blank" rel="noreferrer">
+                <img src={stamp.first_day_cover_url} alt={`First Day Cover for ${stamp.name}`} className="extra-image" />
+              </a>
+            </div>
           </div>
         ) : null}
 
         {(stamp.brochure_image1_url || stamp.brochure_image2_url) ? (
           <div className="extra-section">
             <h3>Brochure</h3>
-            {stamp.brochure_image1_url ? (
-              <a href={stamp.brochure_image1_url} target="_blank" rel="noreferrer">
-                <img src={stamp.brochure_image1_url} alt={`Brochure for ${stamp.name}`} className="extra-image" />
-              </a>
-            ) : null}
-            {stamp.brochure_image2_url ? (
-              <a href={stamp.brochure_image2_url} target="_blank" rel="noreferrer">
-                <img src={stamp.brochure_image2_url} alt={`Brochure for ${stamp.name}`} className="extra-image" />
-              </a>
-            ) : null}
+            <div className="extra-gallery">
+              {stamp.brochure_image1_url ? (
+                <a href={stamp.brochure_image1_url} target="_blank" rel="noreferrer">
+                  <img src={stamp.brochure_image1_url} alt={`Brochure for ${stamp.name}`} className="extra-image" />
+                </a>
+              ) : null}
+              {stamp.brochure_image2_url ? (
+                <a href={stamp.brochure_image2_url} target="_blank" rel="noreferrer">
+                  <img src={stamp.brochure_image2_url} alt={`Brochure for ${stamp.name}`} className="extra-image" />
+                </a>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
