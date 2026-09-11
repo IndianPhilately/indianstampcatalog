@@ -23,15 +23,13 @@ export type StampRecord = {
   keywords: string[] | null;
 };
 
-export type StampYearItem = Pick<
+export type StampListItem = Pick<
   StampRecord,
   "id" | "name" | "issue_date" | "denomination" | "theme" | "image_url"
 >;
 
-export type StampAdjacentItem = Pick<
-  StampRecord,
-  "id" | "name" | "issue_date" | "denomination" | "theme" | "image_url"
->;
+export type StampYearItem = StampListItem;
+export type StampAdjacentItem = StampListItem;
 
 export type StampSearchResult = Pick<StampRecord, "id" | "name" | "issue_date" | "image_url">;
 

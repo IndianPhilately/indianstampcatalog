@@ -210,8 +210,6 @@ h3 {
 }
 
 .latest-stamp .stamp-description {
-  font-family: Arial, sans-serif;
-  font-size: 12px;
   white-space: pre-line;
 }
 
@@ -732,12 +730,6 @@ h3 {
   margin: 0 0 10px;
   color: #333;
   font-size: 1.1rem;
-}
-
-.stamp-description {
-  font-size: 12px;
-  color: #333333;
-  line-height: 1.6;
 }
 
 .extra-section {

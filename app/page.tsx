@@ -2,6 +2,8 @@ import Link from "next/link";
 import { formatDate, getHomePageData } from "../lib/catalog";
 import RandomStampSlider from "./components/random-stamp-slider";
 
+export const revalidate = 60;
+
 export default async function Home() {
   const {
     error,
