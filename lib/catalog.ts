@@ -23,6 +23,18 @@ export type StampRecord = {
   keywords: string[] | null;
 };
 
+export type StampYearItem = Pick<
+  StampRecord,
+  "id" | "name" | "issue_date" | "denomination" | "image_url"
+>;
+
+export type StampAdjacentItem = Pick<
+  StampRecord,
+  "id" | "name" | "issue_date" | "denomination" | "theme" | "image_url"
+>;
+
+export type StampSearchResult = Pick<StampRecord, "id" | "name" | "issue_date" | "image_url">;
+
 export function formatDate(dateValue: string) {
   const date = new Date(dateValue);
 
@@ -58,7 +70,6 @@ export async function getHomePageData() {
   if (error) {
     return {
       error: error.message,
-      stamps: [] as StampSummary[],
       years: [] as number[],
       latestStamp: null as StampSummary | null,
       randomStamps: [] as StampSummary[],
@@ -69,7 +80,6 @@ export async function getHomePageData() {
 
   return {
     error: null,
-    stamps: catalogStamps,
     years: getYearsFromStamps(catalogStamps),
     latestStamp: catalogStamps[0] ?? null,
     randomStamps: [...catalogStamps].sort(() => Math.random() - 0.5).slice(0, 5),
@@ -80,7 +90,7 @@ export async function getYearPageData(year: string) {
   const yearNumber = Number(year);
 
   if (!Number.isFinite(yearNumber)) {
-    return { error: "Invalid year", stamps: [] as StampRecord[], years: [] as number[] };
+    return { error: "Invalid year", stamps: [] as StampYearItem[], years: [] as number[] };
   }
 
   const { data: stamps, error } = await supabase
@@ -91,10 +101,10 @@ export async function getYearPageData(year: string) {
     .order("issue_date", { ascending: true });
 
   if (error) {
-    return { error: error.message, stamps: [] as StampRecord[], years: [] as number[] };
+    return { error: error.message, stamps: [] as StampYearItem[], years: [] as number[] };
   }
 
-  const yearStamps = (stamps ?? []) as StampRecord[];
+  const yearStamps = (stamps ?? []) as StampYearItem[];
 
   const { data: yearData, error: yearError } = await supabase
     .from("stamps")
@@ -125,9 +135,9 @@ export async function getStampDetails(id: string) {
     return {
       error: error.message,
       stamp: null as StampRecord | null,
-      previousStamps: [] as StampRecord[],
-      nextStamps: [] as StampRecord[],
-      relatedStamps: [] as StampRecord[],
+      previousStamps: [] as StampAdjacentItem[],
+      nextStamps: [] as StampAdjacentItem[],
+      relatedStamps: [] as StampAdjacentItem[],
     };
   }
 
@@ -140,15 +150,13 @@ export async function getStampDetails(id: string) {
     return {
       error: adjacentError.message,
       stamp: stamp as StampRecord,
-      previousStamps: [] as StampRecord[],
-      nextStamps: [] as StampRecord[],
-      relatedStamps: [] as StampRecord[],
+      previousStamps: [] as StampAdjacentItem[],
+      nextStamps: [] as StampAdjacentItem[],
+      relatedStamps: [] as StampAdjacentItem[],
     };
   }
 
-  const ordered = ((adjacentData ?? []) as StampRecord[]).sort(
-    (a, b) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime()
-  );
+  const ordered = (adjacentData ?? []) as StampAdjacentItem[];
 
   const currentIndex = ordered.findIndex((item) => item.id === id);
 
@@ -169,13 +177,13 @@ export async function getStampDetails(id: string) {
 
 export async function searchStamps(q: string | null) {
   if (!q) {
-    return [] as Array<Pick<StampRecord, "id" | "name" | "issue_date" | "image_url">>;
+    return [] as StampSearchResult[];
   }
 
   const searchTerm = q.trim();
 
   if (!searchTerm) {
-    return [] as Array<Pick<StampRecord, "id" | "name" | "issue_date" | "image_url">>;
+    return [] as StampSearchResult[];
   }
 
   const { data, error } = await supabase
@@ -190,5 +198,5 @@ export async function searchStamps(q: string | null) {
     throw new Error(error.message);
   }
 
-  return (data ?? []) as Array<Pick<StampRecord, "id" | "name" | "issue_date" | "image_url">>;
+  return (data ?? []) as StampSearchResult[];
 }

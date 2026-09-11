@@ -17,23 +17,33 @@ export default async function YearPage({ params }: { params: Promise<{ year: str
   return (
     <div className="page-wrapper">
       <div className="main-container">
-        <h2 className="home-title">{year} Commemorative Stamps</h2>
+        <div className="year-page-heading">
+          <div>
+            <h2 className="home-title">{year} Commemorative Stamps</h2>
+            <p className="year-result-count">
+              {stamps.length} {stamps.length === 1 ? "stamp" : "stamps"}
+            </p>
+          </div>
+        </div>
         <hr className="thin-separator" />
 
         <div className="stamp-grid">
           {stamps.map((stamp) => (
             <div key={stamp.id} className="stamp-item">
-              {stamp.image_url ? (
-                <Link href={`/stamp/${stamp.id}`} className="stamp-link">
+              <Link href={`/stamp/${stamp.id}`} className="stamp-link stamp-card-link">
+                {stamp.image_url ? (
                   <img src={stamp.image_url} alt={stamp.name} />
-                </Link>
-              ) : null}
-
-              <Link href={`/stamp/${stamp.id}`} className="stamp-link">
+                ) : (
+                  <span className="stamp-image-placeholder" aria-hidden="true">
+                    Image unavailable
+                  </span>
+                )}
                 <p className="stamp-date">{formatDate(stamp.issue_date)}</p>
+                <p className="stamp-titleyear">{stamp.name}</p>
+                {stamp.denomination ? (
+                  <p className="stamp-denomination">{stamp.denomination}</p>
+                ) : null}
               </Link>
-
-              <p className="stamp-titleyear">{stamp.name}</p>
             </div>
           ))}
         </div>
@@ -43,7 +53,12 @@ export default async function YearPage({ params }: { params: Promise<{ year: str
         <div className="year-header">Display Year</div>
         <div className="year-list">
           {years.map((item) => (
-            <Link key={item} href={`/year/${item}`}>
+            <Link
+              key={item}
+              href={`/year/${item}`}
+              className={item === Number(year) ? "active-year" : undefined}
+              aria-current={item === Number(year) ? "page" : undefined}
+            >
               {item}
             </Link>
           ))}

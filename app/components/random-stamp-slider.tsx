@@ -34,7 +34,7 @@ export default function RandomStampSlider({ stamps }: RandomStampSliderProps) {
   return (
     <div className="bottom-slider">
       <div className="slider-wrapper">
-        <div className="slide active" aria-live="polite">
+        <div className="slide" aria-live="polite">
           <div className="slide-left">
             {stamp.image_url ? (
               <img src={stamp.image_url} alt={stamp.name} className="slide-stamp" />
