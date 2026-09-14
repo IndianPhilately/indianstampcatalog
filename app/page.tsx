@@ -24,9 +24,9 @@ export default async function Home() {
         <div className="main-container">
           <h2 className="home-title">Home</h2>
           <p>
-            This site is for Philatelists around the world who collect Indian Postal Stamps.
-            DaakTicket India is an online resource and reference for Indian postage stamps
-            since independence till the latest issues.
+            This site is for philatelists worldwide who collect Indian postal stamps. 
+            It serves as an online resource and reference for India's postage issues from independence to the latest releases. 
+            Each stamp tells a story of the nation's heritage, milestones, and remarkable personalities.
           </p>
 
           <hr className="thin-separator" />
