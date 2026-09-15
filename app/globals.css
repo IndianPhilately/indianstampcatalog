@@ -361,20 +361,25 @@ h3 {
 }
 
 .year-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* Forms exactly 4 perfectly equal columns */
+  gap: 6px; /* Perfectly uniform spacing horizontally and vertically */
   padding: 10px;
 }
 
 .year-list a {
-  display: inline-block;
+  display: block;
   color: #2a7bc2;
   text-decoration: none;
-  padding: 4px 6px;
+  padding: 5px 1px;
   border-radius: 3px;
   background-color: #eaf2fb;
+  font-size: 11px; /* Decreased font slightly for safety */
+  letter-spacing: -0.2px; /* Pulls numbers tighter together */
+  text-align: center;
+  box-sizing: border-box;
 }
+
 
 .year-list a:hover {
   background-color: #d0e4f7;
