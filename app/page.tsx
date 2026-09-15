@@ -47,19 +47,10 @@ export default async function Home() {
                   />
                 ) : null}
 
-                <div className="stamp-description">
-                  <strong>{latestStamp.name}</strong> is a recent addition to the catalog.
-                  {latestStamp.description ? (
-                    <>
-                      {latestStamp.description.slice(0, 960)}
-                      {latestStamp.description.length > 960 ? "..." : ""}
-                    </>
-                  ) : (
-                    <span> View the full stamp details for release information and more.</span>
-                  )}
-                  {latestStamp.description ? " " : null}
-                  <Link href={`/stamp/${latestStamp.id}`}>[more]</Link>
+                <div className="stamp-description whitespace-pre-line">
+                  {latestStamp.description ?? "View the full stamp details for release information and more."}
                 </div>
+                
               </div>
             </div>
           ) : (
