@@ -33,6 +33,10 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
     .filter((url): url is string => Boolean(url))
     .map((src) => ({ src, alt: `Brochure for ${stamp.name}` }));
 
+  // Absolute domain configuration
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://indianstampcatalog.vercel.app";
+  const shareUrl = `${siteUrl}/stamp/${stamp.id}`;
+
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
@@ -120,8 +124,9 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
               <span>Share:</span>
               <div className="flex items-center gap-2">
+                {/* Twitter / X */}
                 <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(stamp.name)}`}
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(stamp.name)}&url=${encodeURIComponent(shareUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-1.5 hover:bg-slate-100 rounded-md text-slate-600 hover:text-slate-950 transition"
@@ -133,8 +138,9 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
                   </svg>
                 </a>
                 
+                {/* Facebook */}
                 <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`/stamp/${stamp.id}`)}`}
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-1.5 hover:bg-slate-100 rounded-md text-slate-600 hover:text-blue-600 transition"
@@ -146,8 +152,9 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
                   </svg>
                 </a>
 
+                {/* WhatsApp */}
                 <a
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${stamp.name} - /stamp/${stamp.id}`)}`}
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${stamp.name} -${shareUrl}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-1.5 hover:bg-slate-100 rounded-md text-slate-600 hover:text-emerald-600 transition"
