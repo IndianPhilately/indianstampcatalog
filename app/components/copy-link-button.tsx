@@ -16,12 +16,17 @@ export default function CopyLinkButton({ stampName }: CopyLinkButtonProps) {
   }
 
   return (
-    <button type="button" className="share-btn" onClick={copyLink} aria-live="polite">
-      <svg className="share-icon share-icon-link" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M10.59 13.41a1.98 1.98 0 0 0 2.82 0l3.18-3.18a2 2 0 0 0-2.83-2.83l-1.06 1.06a1 1 0 1 1-1.42-1.42l1.06-1.06a4 4 0 0 1 5.66 5.66l-3.18 3.18a4 4 0 0 1-5.66 0 1 1 0 0 1 1.42-1.41ZM13.41 10.59a1.98 1.98 0 0 0-2.82 0l-3.18 3.18a2 2 0 0 0 2.83 2.83l1.06-1.06a1 1 0 1 1 1.42 1.42l-1.06 1.06A4 4 0 0 1 6 12.36l3.18-3.18a4 4 0 0 1 5.66 0 1 1 0 0 1-1.42 1.41Z" />
+    <button
+      type="button"
+      onClick={copyLink}
+      className="p-1.5 hover:bg-slate-100 rounded-md text-slate-600 hover:text-slate-950 transition cursor-pointer flex items-center gap-1 text-xs"
+      title="Copy Link"
+      aria-label={`Copy Link for ${stampName}`}
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
       </svg>
-      {copied ? "Copied" : "Copy Link"}
-      <span className="sr-only"> for {stampName}</span>
+      {copied && <span className="font-semibold text-blue-700">Copied!</span>}
     </button>
   );
 }

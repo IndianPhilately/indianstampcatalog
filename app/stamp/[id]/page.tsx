@@ -1,12 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import CopyLinkButton from "../../components/copy-link-button";
-import StampImageGallery from "../../components/stamp-image-gallery";
-import { formatDate, getStampDetails } from "../../../lib/catalog";
+import CopyLinkButton from "@/app/components/copy-link-button";
+import StampImageGallery from "@/app/components/stamp-image-gallery";
+import DecadeYearWidget from "@/app/components/decade-year-widget";
+import { formatDate, getStampDetails } from "@/lib/catalog";
 
 export default async function StampPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { error, stamp, previousStamps, nextStamps, relatedStamps, years } = await getStampDetails(id);
+  const { 
+    error, 
+    stamp, 
+    previousStamps, 
+    nextStamps, 
+    relatedStamps, 
+    years, 
+    issuesCountMap = {} 
+  } = await getStampDetails(id);
 
   if (error) {
     throw new Error(error);
@@ -22,165 +31,199 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
     .map((src) => ({ src, alt: `Brochure for ${stamp.name}` }));
 
   return (
-    <div className="stamp-detail-layout">
-      <div className="stamp-detail-content main-container">
-        <div className="stamp-detail-header">
-          <Link href={`/year/${issueYear}`} className="stamp-detail-back">
-            Back to {issueYear} stamps
-          </Link>
-          <div className="stamp-title-row">
-            <h2 className="home-title">{stamp.name}</h2>
-            <nav className="stamp-navigation" aria-label="Stamp navigation">
-              {previousStamps[0] ? (
-                <Link href={`/stamp/${previousStamps[0].id}`}>&larr; Previous</Link>
-              ) : (
-                <span aria-disabled="true">&larr; Previous</span>
-              )}
-              {nextStamps[0] ? (
-                <Link href={`/stamp/${nextStamps[0].id}`}>Next &rarr;</Link>
-              ) : (
-                <span aria-disabled="true">Next &rarr;</span>
-              )}
-            </nav>
-          </div>
-        </div>
-        <p className="stamp-meta">
-          <strong>Release Date:</strong> {formatDate(stamp.issue_date)},
-          <strong> Denomination:</strong> {stamp.denomination ?? "N/A"}
-        </p>
-
-        <hr className="thin-separator" />
-
-        <StampImageGallery
-          primaryImage={stamp.image_url ? { src: stamp.image_url, alt: stamp.name } : null}
-          firstDayCover={
-            stamp.first_day_cover_url
-              ? {
-                  src: stamp.first_day_cover_url,
-                  alt: `First Day Cover for ${stamp.name}`,
-                }
-              : null
-          }
-          brochures={brochureImages}
-        >
-          <h3 className="detail-section-title">About this stamp</h3>
-          <div className="stamp-description whitespace-pre-line">
-            {stamp.description ?? "No description available."}
-          </div>
-        </StampImageGallery>
-
-        <hr className="thin-separator" />
-
-        <div className="share-section">
-          <span className="share-label">Share this:</span>
-          <a
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(stamp.name)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="share-btn"
-          >
-            <svg className="share-icon share-icon-twitter" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M18.9 2H22l-6.77 7.74L23.2 22h-6.24l-4.89-6.39L6.48 22H3.37l7.24-8.28L2.8 2h6.4l4.42 5.85L18.9 2Zm-1.1 17.85h1.73L8.3 4.03H6.44L17.8 19.85Z" />
-            </svg>
-            Twitter
-          </a>
-          <a
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : `/stamp/${stamp.id}`)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="share-btn"
-          >
-            <svg className="share-icon share-icon-facebook" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M13.5 22v-8h2.75l.5-3h-3.25V9.05c0-.87.29-1.46 1.55-1.46h1.65V4.9c-.29-.04-1.28-.13-2.44-.13-2.42 0-4.08 1.48-4.08 4.2V11H7.5v3h2.68v8h3.32Z" />
-            </svg>
-            Facebook
-          </a>
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(`${stamp.name} - /stamp/${stamp.id}`)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="share-btn"
-          >
-            <svg className="share-icon share-icon-whatsapp" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M20.52 3.48A11.84 11.84 0 0 0 12.08 0C5.54 0 .22 5.32.22 11.86c0 2.09.55 4.13 1.59 5.93L.12 24l6.36-1.67a11.84 11.84 0 0 0 5.6 1.42h.01c6.53 0 11.85-5.32 11.85-11.86 0-3.17-1.22-6.14-3.42-8.41Zm-8.44 18.2h-.01a9.82 9.82 0 0 1-5.01-1.37l-.36-.21-3.78.99 1.01-3.68-.23-.38a9.84 9.84 0 0 1-1.51-5.17C2.19 6.43 6.62 2 12.08 2a9.8 9.8 0 0 1 6.98 2.9 9.82 9.82 0 0 1 2.89 6.99c0 5.46-4.43 9.89-9.87 9.89Zm5.42-7.41c-.3-.15-1.78-.88-2.05-.98-.28-.1-.48-.15-.69.15-.2.3-.79.98-.97 1.18-.18.2-.36.23-.66.08-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.78-1.67-2.08-.17-.3-.02-.46.13-.61.13-.13.3-.36.45-.53.15-.18.2-.3.3-.5.1-.2.05-.38-.03-.53-.08-.15-.69-1.65-.94-2.26-.25-.59-.5-.51-.69-.52h-.59c-.2 0-.53.08-.81.38-.28.3-1.06 1.04-1.06 2.54 0 1.5 1.09 2.94 1.24 3.14.15.2 2.14 3.27 5.19 4.59.73.32 1.3.51 1.75.65.74.24 1.41.2 1.94.12.59-.09 1.78-.73 2.03-1.43.25-.7.25-1.3.18-1.43-.08-.13-.28-.2-.58-.35Z" />
-            </svg>
-            WhatsApp
-          </a>
-          <CopyLinkButton stampName={stamp.name} />
-        </div>
-      </div>
-
-      <aside className="sidebar-box">
-        <div className="year-widget detail-year-widget">
-          <div className="year-header">Display Year</div>
-          <div className="year-list">
-            {years.map((year) => (
-              <Link
-                key={year}
-                href={`/year/${year}`}
-                className={year === issueYear ? "active-year" : undefined}
-                aria-current={year === issueYear ? "page" : undefined}
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+        
+        {/* Left Primary Article Content (col-span-8) */}
+        <section className="lg:col-span-8">
+          <article className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm space-y-5">
+            
+            {/* Back Link & Top Pagination Bar */}
+            <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-100">
+              <Link 
+                href={`/year/${issueYear}`} 
+                className="text-xs font-semibold text-blue-700 hover:text-blue-900 inline-flex items-center gap-1 transition"
               >
-                {year}
+                &larr; Back to {issueYear} stamps
               </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="sidebar-section">
-          <div className="sidebar-header">Previous Issues</div>
-          <div className="issue-list">
-            {previousStamps.length ? (
-              previousStamps.map((item) => (
-                <div key={item.id} className="issue-item">
-                  <div className="issue-date">{formatDate(item.issue_date)}</div>
-                  <Link href={`/stamp/${item.id}`} className="issue-link">
-                    {item.name}
+              
+              <div className="inline-flex items-center gap-1.5">
+                {previousStamps[0] ? (
+                  <Link 
+                    href={`/stamp/${previousStamps[0].id}`}
+                    className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200/80 transition"
+                  >
+                    &larr; Previous
                   </Link>
-                </div>
-              ))
-            ) : (
-              <div className="issue-item">No previous issues found.</div>
-            )}
-          </div>
-        </div>
+                ) : (
+                  <span className="px-2.5 py-1 text-xs font-semibold text-slate-400 bg-slate-50 rounded-lg border border-slate-200/50 cursor-not-allowed">
+                    &larr; Previous
+                  </span>
+                )}
 
-        <div className="sidebar-section">
-          <div className="sidebar-header">Next Issues</div>
-          <div className="issue-list">
-            {nextStamps.length ? (
-              nextStamps.map((item) => (
-                <div key={item.id} className="issue-item">
-                  <div className="issue-date">{formatDate(item.issue_date)}</div>
-                  <Link href={`/stamp/${item.id}`} className="issue-link">
-                    {item.name}
+                {nextStamps[0] ? (
+                  <Link 
+                    href={`/stamp/${nextStamps[0].id}`}
+                    className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200/80 transition"
+                  >
+                    Next &rarr;
                   </Link>
-                </div>
-              ))
-            ) : (
-              <div className="issue-item">No next issues found.</div>
-            )}
-          </div>
-        </div>
+                ) : (
+                  <span className="px-2.5 py-1 text-xs font-semibold text-slate-400 bg-slate-50 rounded-lg border border-slate-200/50 cursor-not-allowed">
+                    Next &rarr;
+                  </span>
+                )}
+              </div>
+            </div>
 
-        <div className="sidebar-section">
-          <div className="sidebar-header">Related Stamps</div>
-          <div className="issue-list">
-            {relatedStamps.length ? (
-              relatedStamps.map((item) => (
-                <div key={item.id} className="issue-item">
-                  <div className="issue-date">{formatDate(item.issue_date)}</div>
-                  <Link href={`/stamp/${item.id}`} className="issue-link">
-                    {item.name}
+            {/* Title & Clean Meta Information */}
+            <div className="space-y-1">
+              <h1 className="text-2xl font-bold text-slate-950 tracking-tight">
+                {stamp.name}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                <span className="text-slate-500">Release Date:</span>{" "}
+                <strong className="text-slate-900 font-semibold">{formatDate(stamp.issue_date)}</strong>
+                {stamp.denomination && (
+                  <>
+                    <span className="mx-2 text-slate-300">&bull;</span>
+                    <span className="text-slate-500">Denomination:</span>{" "}
+                    <strong className="text-blue-700 font-semibold">{stamp.denomination}</strong>
+                  </>
+                )}
+              </p>
+            </div>
+
+            {/* Stamp Image Mount with Skeleton Shimmer & Lightbox */}
+            <StampImageGallery
+              primaryImage={stamp.image_url ? { src: stamp.image_url, alt: stamp.name } : null}
+              firstDayCover={
+                stamp.first_day_cover_url
+                  ? { src: stamp.first_day_cover_url, alt: `First Day Cover for ${stamp.name}` }
+                  : null
+              }
+              brochures={brochureImages}
+            />
+
+            {/* Narrative Description */}
+            <div className="pt-2 space-y-3 text-sm text-slate-800 leading-relaxed">
+              <h2 className="text-base font-bold text-slate-950">About this stamp</h2>
+              <div className="space-y-3 text-slate-700 whitespace-pre-line">
+                {stamp.description ?? "No description available."}
+              </div>
+            </div>
+
+            {/* Micro Action Bar */}
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span>Share:</span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(stamp.name)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 hover:bg-slate-100 rounded-md text-slate-600 hover:text-slate-950 transition"
+                  title="Share on Twitter"
+                  aria-label="Share on Twitter"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                </a>
+                
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`/stamp/${stamp.id}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 hover:bg-slate-100 rounded-md text-slate-600 hover:text-blue-600 transition"
+                  title="Share on Facebook"
+                  aria-label="Share on Facebook"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </a>
+
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${stamp.name} - /stamp/${stamp.id}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 hover:bg-slate-100 rounded-md text-slate-600 hover:text-emerald-600 transition"
+                  title="Share on WhatsApp"
+                  aria-label="Share on WhatsApp"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+                  </svg>
+                </a>
+
+                <CopyLinkButton stampName={stamp.name} />
+              </div>
+            </div>
+
+          </article>
+        </section>
+
+        {/* Right Sidebar Rail (col-span-4) */}
+        <aside className="lg:col-span-4 space-y-6" aria-label="Stamp navigation rail">
+          
+          {/* 1. Decade Year Widget */}
+          <DecadeYearWidget 
+            allYears={years} 
+            issuesMap={issuesCountMap} 
+            activeYear={issueYear} 
+          />
+
+          {/* 2. Related Stamps Card */}
+          {relatedStamps.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-sm">
+              <div className="pb-3.5 border-b border-slate-100 mb-3">
+                <h3 className="text-base sm:text-lg font-bold text-slate-950 leading-snug">Related Stamps</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Thematically linked issues</p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                {relatedStamps.slice(0, 3).map((item) => (
+                  <Link 
+                    key={item.id} 
+                    href={`/stamp/${item.id}`}
+                    className="group flex flex-col bg-white rounded-xl border border-slate-200/90 p-2 hover:border-blue-400 hover:shadow-xs transition duration-150"
+                  >
+                    <div className="w-full aspect-square bg-[#F1F4F7] rounded-lg p-1.5 flex items-center justify-center overflow-hidden border border-slate-100">
+                      {item.image_url ? (
+                        <img 
+                          src={item.image_url} 
+                          alt={item.name} 
+                          className="max-w-full max-h-full object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-200" 
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-slate-200/60 rounded" />
+                      )}
+                    </div>
+                    
+                    <div className="pt-1.5 text-center flex-1 flex flex-col justify-between">
+                      <div>
+                        <time className="block text-[10px] text-slate-400 leading-tight">
+                          {formatDate(item.issue_date)}
+                        </time>
+                        <strong className="block text-xs font-semibold text-slate-800 group-hover:text-blue-700 leading-snug line-clamp-1 mt-0.5" title={item.name}>
+                          {item.name}
+                        </strong>
+                      </div>
+                      {item.denomination && (
+                        <span className="block text-[10px] text-slate-500 font-medium mt-0.5">
+                          {item.denomination}
+                        </span>
+                      )}
+                    </div>
                   </Link>
-                </div>
-              ))
-            ) : (
-              <div className="issue-item">No related stamps found.</div>
-            )}
-          </div>
-        </div>
-      </aside>
-    </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </aside>
+
+      </div>
+    </main>
   );
 }
