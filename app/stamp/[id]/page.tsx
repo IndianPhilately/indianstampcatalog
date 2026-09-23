@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CopyLinkButton from "@/app/components/copy-link-button";
@@ -8,6 +9,70 @@ import { formatDate, getStampDetails } from "@/lib/catalog";
 // Cache stamp details on Vercel Edge CDN for 24 hours (86400s)
 export const revalidate = 86400;
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://indianstampcatalog.vercel.app";
+
+// Helper to guarantee absolute URLs for social crawlers
+function toAbsoluteUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${SITE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+// 1. Dynamic Metadata Generation for Link Previews (Facebook, WhatsApp, Twitter)
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { stamp } = await getStampDetails(id);
+
+  if (!stamp) {
+    return {
+      title: "Stamp Not Found | Indian Stamp Catalog",
+    };
+  }
+
+  const shareUrl = `${SITE_URL}/stamp/${stamp.id}`;
+  const metaDescription = stamp.description 
+    ? stamp.description.slice(0, 160).trim() + "..."
+    : `Details and catalog information for ${stamp.name}`;
+
+  const absoluteImageUrl = toAbsoluteUrl(stamp.image_url);
+
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: `${stamp.name} | Indian Stamp Catalog`,
+    description: metaDescription,
+    alternates: {
+      canonical: shareUrl,
+    },
+    openGraph: {
+      title: stamp.name,
+      description: metaDescription,
+      url: shareUrl,
+      siteName: "Indian Stamp Catalog",
+      type: "article",
+      images: absoluteImageUrl
+        ? [
+            {
+              url: absoluteImageUrl,
+              secureUrl: absoluteImageUrl,
+              alt: stamp.name,
+            },
+          ]
+        : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: stamp.name,
+      description: metaDescription,
+      images: absoluteImageUrl ? [absoluteImageUrl] : [],
+    },
+  };
+}
+
+// 2. Main Stamp Page Component
 export default async function StampPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { 
@@ -33,9 +98,8 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
     .filter((url): url is string => Boolean(url))
     .map((src) => ({ src, alt: `Brochure for ${stamp.name}` }));
 
-  // Absolute domain configuration
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://indianstampcatalog.vercel.app";
-  const shareUrl = `${siteUrl}/stamp/${stamp.id}`;
+  // Absolute share URL for social buttons
+  const shareUrl = `${SITE_URL}/stamp/${stamp.id}`;
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1">
