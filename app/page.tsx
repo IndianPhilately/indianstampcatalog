@@ -2,7 +2,8 @@ import Link from "next/link";
 import { formatDate, getHomePageData } from "../lib/catalog";
 import DecadeYearWidget from "./components/decade-year-widget";
 
-export const revalidate = 60;
+// Cache on Vercel Edge CDN and revalidate at most once every hour (3600s)
+export const revalidate = 3600;
 
 export default async function Home() {
   const {

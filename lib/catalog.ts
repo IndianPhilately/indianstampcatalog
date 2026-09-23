@@ -41,22 +41,17 @@ export type CuratedTheme = {
   title: string;
   subtitle: string;
   description: string;
-  query: string;
-  fallbackImage: string;
   count: number;
   featuredImage?: string | null;
 };
 
-const THEME_DEFINITIONS: Omit<CuratedTheme, "count" | "featuredImage">[] = [
+export const THEME_DEFINITIONS: Omit<CuratedTheme, "count" | "featuredImage">[] = [
   {
     id: "national-symbols",
     title: "National Symbols & Identity",
     subtitle: "Emblems, flags, constitution, and statehood insignia",
     description:
       "The Ashoka Lion Capital, the Tricolour, constitutional milestones, and symbols defining sovereign democratic India.",
-    query: "Flag",
-    fallbackImage:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/India_1947_stamp_flag.jpg/240px-India_1947_stamp_flag.jpg",
   },
   {
     id: "leaders",
@@ -64,9 +59,6 @@ const THEME_DEFINITIONS: Omit<CuratedTheme, "count" | "featuredImage">[] = [
     subtitle: "Memorial and statehood personalities",
     description:
       "Freedom fighters, constitutional architects, social reformers, Nobel laureates, and visionary heads of state.",
-    query: "Personality",
-    fallbackImage:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Mahatma_Gandhi_1948_stamp_of_India.jpg/240px-Mahatma_Gandhi_1948_stamp_of_India.jpg",
   },
   {
     id: "historical-events",
@@ -74,9 +66,6 @@ const THEME_DEFINITIONS: Omit<CuratedTheme, "count" | "featuredImage">[] = [
     subtitle: "Freedom struggle landmarks and centenaries",
     description:
       "Turning points of the freedom struggle, centenaries of national institutions, treaty signings, and jubilee milestones.",
-    query: "History",
-    fallbackImage:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Air_Force_stamp_1967.jpg/240px-Air_Force_stamp_1967.jpg",
   },
   {
     id: "wildlife-nature",
@@ -84,9 +73,6 @@ const THEME_DEFINITIONS: Omit<CuratedTheme, "count" | "featuredImage">[] = [
     subtitle: "Endangered fauna, national parks, and botanical heritage",
     description:
       "Royal Bengal tigers, Asiatic lions, Himalayan wildflowers, migratory birds, and forest biodiversity preserves.",
-    query: "Wildlife",
-    fallbackImage:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Indian_Tiger_stamp.jpg/240px-Indian_Tiger_stamp.jpg",
   },
   {
     id: "art-culture",
@@ -94,9 +80,6 @@ const THEME_DEFINITIONS: Omit<CuratedTheme, "count" | "featuredImage">[] = [
     subtitle: "Dance, epic folklore, and traditional handicrafts",
     description:
       "Classical dances (Kathakali, Bharatanatyam), miniature ragamala paintings, folk handicrafts, and ancient epics.",
-    query: "Art",
-    fallbackImage:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Kathakali_1971_stamp_of_India.jpg/240px-Kathakali_1971_stamp_of_India.jpg",
   },
   {
     id: "science-tech",
@@ -104,9 +87,6 @@ const THEME_DEFINITIONS: Omit<CuratedTheme, "count" | "featuredImage">[] = [
     subtitle: "Space exploration, research, atomic energy, and pioneers",
     description:
       "Satellite launch vehicles, nuclear research pioneers, technological self-reliance, and premier scientific institutes.",
-    query: "Science",
-    fallbackImage:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Air_India_International_1948_stamp.jpg/240px-Air_India_International_1948_stamp.jpg",
   },
   {
     id: "sports-international",
@@ -114,9 +94,6 @@ const THEME_DEFINITIONS: Omit<CuratedTheme, "count" | "featuredImage">[] = [
     subtitle: "Asian Games, Olympics, global summits, and diplomacy",
     description:
       "Historic Asian and Commonwealth Games, Olympic representations, United Nations commemorations, and international treaties.",
-    query: "Sports",
-    fallbackImage:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/First_Asian_Games_1951_stamp.jpg/240px-First_Asian_Games_1951_stamp.jpg",
   },
   {
     id: "landmarks-heritage",
@@ -124,19 +101,14 @@ const THEME_DEFINITIONS: Omit<CuratedTheme, "count" | "featuredImage">[] = [
     subtitle: "UNESCO monuments, forts, and historic temples",
     description:
       "UNESCO World Heritage monuments, hill forts of Rajasthan, Dravidian temple towers, and colonial landmarks.",
-    query: "Architecture",
-    fallbackImage:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Brihadisvara_Temple_stamp.jpg/240px-Brihadisvara_Temple_stamp.jpg",
   },
 ];
 
 export function formatDate(dateValue: string) {
   const date = new Date(dateValue);
-
   if (Number.isNaN(date.getTime())) {
     return dateValue;
   }
-
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
     day: "numeric",
@@ -170,10 +142,22 @@ export function getIssuesCountByYear(
 }
 
 export async function getHomePageData() {
-  const { data: stamps, error } = await supabase
-    .from("stamps")
-    .select("id, name, issue_date, denomination, image_url, description")
-    .order("issue_date", { ascending: false });
+  // Parallelized requests:
+  // 1. Fetch only the top 4 recent stamps with card fields
+  // 2. Fetch only issue_dates across all stamps to derive years, decade counts, and total stamp count
+  const [recentResult, yearsResult] = await Promise.all([
+    supabase
+      .from("stamps")
+      .select("id, name, issue_date, denomination, image_url, description")
+      .order("issue_date", { ascending: false })
+      .limit(4),
+    supabase
+      .from("stamps")
+      .select("issue_date")
+      .order("issue_date", { ascending: false }),
+  ]);
+
+  const error = recentResult.error || yearsResult.error;
 
   if (error) {
     return {
@@ -187,16 +171,17 @@ export async function getHomePageData() {
     };
   }
 
-  const catalogStamps = (stamps ?? []) as StampSummary[];
+  const recentList = (recentResult.data ?? []) as StampSummary[];
+  const allStampsWithDate = (yearsResult.data ?? []) as Array<{ issue_date: string }>;
 
   return {
     error: null,
-    stampCount: catalogStamps.length,
-    years: getYearsFromStamps(catalogStamps),
-    issuesCountMap: getIssuesCountByYear(catalogStamps),
-    latestStamp: catalogStamps[0] ?? null,
-    recentStamps: catalogStamps.slice(1, 4),
-    randomStamps: [...catalogStamps].sort(() => Math.random() - 0.5).slice(0, 5),
+    stampCount: allStampsWithDate.length,
+    years: getYearsFromStamps(allStampsWithDate),
+    issuesCountMap: getIssuesCountByYear(allStampsWithDate),
+    latestStamp: recentList[0] ?? null,
+    recentStamps: recentList.slice(1, 4),
+    randomStamps: recentList.slice(0, 3),
   };
 }
 
@@ -212,49 +197,40 @@ export async function getYearPageData(year: string) {
     };
   }
 
-  const { data: stamps, error } = await supabase
-    .from("stamps")
-    .select("id, name, issue_date, denomination, theme, image_url")
-    .gte("issue_date", `${yearNumber}-01-01`)
-    .lt("issue_date", `${yearNumber + 1}-01-01`)
-    .order("issue_date", { ascending: true });
+  const [yearStampsResult, allDatesResult] = await Promise.all([
+    supabase
+      .from("stamps")
+      .select("id, name, issue_date, denomination, theme, image_url")
+      .gte("issue_date", `${yearNumber}-01-01`)
+      .lt("issue_date", `${yearNumber + 1}-01-01`)
+      .order("issue_date", { ascending: true }),
+    supabase
+      .from("stamps")
+      .select("issue_date")
+      .order("issue_date", { ascending: false }),
+  ]);
+
+  const error = yearStampsResult.error || allDatesResult.error;
 
   if (error) {
     return {
       error: error.message,
-      stamps: [] as StampYearItem[],
+      stamps: (yearStampsResult.data ?? []) as StampYearItem[],
       years: [] as number[],
       issuesCountMap: {} as Record<number, number>,
     };
   }
 
-  const yearStamps = (stamps ?? []) as StampYearItem[];
-
-  const { data: yearData, error: yearError } = await supabase
-    .from("stamps")
-    .select("issue_date")
-    .order("issue_date", { ascending: false });
-
-  if (yearError) {
-    return {
-      error: yearError.message,
-      stamps: yearStamps,
-      years: [] as number[],
-      issuesCountMap: {} as Record<number, number>,
-    };
-  }
-
-  const allStampsWithDate = (yearData ?? []) as Array<{ issue_date: string }>;
+  const allStampsWithDate = (allDatesResult.data ?? []) as Array<{ issue_date: string }>;
 
   return {
     error: null,
-    stamps: yearStamps,
+    stamps: (yearStampsResult.data ?? []) as StampYearItem[],
     years: getYearsFromStamps(allStampsWithDate),
     issuesCountMap: getIssuesCountByYear(allStampsWithDate),
   };
 }
 
-// Extracts meaningful subject words from the stamp title
 function getSignificantTitleKeywords(title: string): string[] {
   const stopWords = new Set([
     "india",
@@ -285,7 +261,6 @@ function getSignificantTitleKeywords(title: string): string[] {
     .filter((word) => word.length > 3 && !stopWords.has(word));
 }
 
-// Ranks related stamps prioritizing Title Subject Overlap (+120), Theme (+40), and Era Proximity (+5 to +20)
 export async function getRelatedStamps(
   currentStamp: StampRecord,
   limit: number = 6
@@ -300,17 +275,14 @@ export async function getRelatedStamps(
 
   const filterConditions: string[] = [];
 
-  // 1. Search title keywords first (e.g. "rabindranath" and "tagore")
   for (const kw of titleKeywords.slice(0, 3)) {
     filterConditions.push(`name.ilike.%${kw}%`);
   }
 
-  // 2. Add theme condition
   if (currentStamp.theme) {
     filterConditions.push(`theme.eq."${currentStamp.theme}"`);
   }
 
-  // 3. Contemporary era candidates as fallback
   if (Number.isFinite(currentYear)) {
     filterConditions.push(
       `and(issue_date.gte.${currentYear - 5}-01-01,issue_date.lte.${currentYear + 5}-12-31)`
@@ -338,7 +310,6 @@ export async function getRelatedStamps(
     const candYear = new Date(candidate.issue_date).getFullYear();
     const candNameLower = candidate.name.toLowerCase();
 
-    // 1. Title Keyword Match: High weight ensures subject/person matches ALWAYS take the lead
     let matchedKeywordsCount = 0;
     for (const kw of titleKeywords) {
       if (candNameLower.includes(kw)) {
@@ -347,16 +318,13 @@ export async function getRelatedStamps(
     }
 
     if (matchedKeywordsCount > 0) {
-      // First keyword match = +120; each additional keyword match = +40
       score += 120 + (matchedKeywordsCount - 1) * 40;
     }
 
-    // 2. Theme Affinity (Weight: 40)
     if (currentStamp.theme && candidate.theme === currentStamp.theme) {
       score += 40;
     }
 
-    // 3. Era Proximity (Weight: 5 - 20)
     if (Number.isFinite(currentYear) && Number.isFinite(candYear)) {
       const yearDiff = Math.abs(currentYear - candYear);
       if (yearDiff === 0) score += 20;
@@ -367,7 +335,6 @@ export async function getRelatedStamps(
     return { stamp: candidate as StampAdjacentItem, score };
   });
 
-  // Highest score strictly first; issue_date breaks ties
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     return (b.stamp.issue_date || "").localeCompare(a.stamp.issue_date || "");
@@ -470,7 +437,7 @@ export async function searchStamps(q: string | null) {
 export async function getThemesPageData() {
   const { data: stamps, error } = await supabase
     .from("stamps")
-    .select("id, name, theme, image_url, description, issue_date")
+    .select("id, theme, image_url, issue_date")
     .order("issue_date", { ascending: false });
 
   if (error) {
@@ -491,96 +458,18 @@ export async function getThemesPageData() {
     .filter((yr) => Number.isFinite(yr));
   const earliestYear = validYears.length > 0 ? Math.min(...validYears) : 1947;
 
+  // Case-insensitive, whitespace-tolerant exact matching
   const populatedThemes: CuratedTheme[] = THEME_DEFINITIONS.map((def) => {
-    const qLower = def.query.toLowerCase();
-    const titleLower = def.title.toLowerCase();
-
-    const matchingStamps = catalog.filter((s) => {
-      const stampTheme = (s.theme || "").toLowerCase();
-      const stampName = (s.name || "").toLowerCase();
-      const stampDesc = (s.description || "").toLowerCase();
-
-      if (stampTheme && (stampTheme === titleLower || titleLower.includes(stampTheme))) {
-        return true;
-      }
-
-      switch (def.id) {
-        case "national-symbols":
-          return (
-            stampTheme.includes("symbol") ||
-            stampTheme.includes("flag") ||
-            stampName.includes("flag") ||
-            stampName.includes("lion capital") ||
-            stampName.includes("constitution") ||
-            stampName.includes("republic")
-          );
-        case "leaders":
-          return (
-            stampTheme.includes("personality") ||
-            stampTheme.includes("leader") ||
-            stampDesc.includes("born") ||
-            stampDesc.includes("freedom fighter")
-          );
-        case "historical-events":
-          return (
-            stampTheme.includes("history") ||
-            stampTheme.includes("centenary") ||
-            stampTheme.includes("anniversary") ||
-            stampTheme.includes("jubilee")
-          );
-        case "wildlife-nature":
-          return (
-            stampTheme.includes("wildlife") ||
-            stampTheme.includes("nature") ||
-            stampTheme.includes("flora") ||
-            stampTheme.includes("fauna") ||
-            stampTheme.includes("birds") ||
-            stampTheme.includes("animals")
-          );
-        case "art-culture":
-          return (
-            stampTheme.includes("art") ||
-            stampTheme.includes("culture") ||
-            stampTheme.includes("mythology") ||
-            stampTheme.includes("dance") ||
-            stampTheme.includes("painting")
-          );
-        case "science-tech":
-          return (
-            stampTheme.includes("science") ||
-            stampTheme.includes("technology") ||
-            stampTheme.includes("space") ||
-            stampTheme.includes("research") ||
-            stampTheme.includes("atomic")
-          );
-        case "sports-international":
-          return (
-            stampTheme.includes("sports") ||
-            stampTheme.includes("games") ||
-            stampTheme.includes("international") ||
-            stampTheme.includes("olympic") ||
-            stampTheme.includes("summit")
-          );
-        case "landmarks-heritage":
-          return (
-            stampTheme.includes("landmark") ||
-            stampTheme.includes("architecture") ||
-            stampTheme.includes("heritage") ||
-            stampTheme.includes("monument") ||
-            stampTheme.includes("temple") ||
-            stampTheme.includes("fort")
-          );
-        default:
-          return stampTheme.includes(qLower) || stampName.includes(qLower);
-      }
-    });
-
-    const firstValidImage = matchingStamps.find((s) => Boolean(s.image_url))?.image_url;
+    const targetTitle = def.title.trim().toLowerCase();
+    const matchingStamps = catalog.filter(
+      (s) => s.theme && s.theme.trim().toLowerCase() === targetTitle
+    );
+    const firstImage = matchingStamps.find((s) => Boolean(s.image_url))?.image_url;
 
     return {
       ...def,
       count: matchingStamps.length,
-      featuredImage: firstValidImage || def.fallbackImage,
+      featuredImage: firstImage || "https://indianstampcatalog.vercel.app/favicon.ico",
     };
   });
 

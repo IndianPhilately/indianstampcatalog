@@ -5,6 +5,9 @@ import StampImageGallery from "@/app/components/stamp-image-gallery";
 import DecadeYearWidget from "@/app/components/decade-year-widget";
 import { formatDate, getStampDetails } from "@/lib/catalog";
 
+// Cache stamp details on Vercel Edge CDN for 24 hours (86400s)
+export const revalidate = 86400;
+
 export default async function StampPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { 
@@ -193,6 +196,8 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
                         <img 
                           src={item.image_url} 
                           alt={item.name} 
+                          loading="lazy"
+                          decoding="async"
                           className="max-w-full max-h-full object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-200" 
                         />
                       ) : (

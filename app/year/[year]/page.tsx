@@ -4,6 +4,10 @@ import YearStampGrid from "@/app/components/year-stamp-grid";
 import DecadeYearWidget from "@/app/components/decade-year-widget";
 import { getYearPageData } from "@/lib/catalog";
 
+// Cache year catalog on Vercel Edge CDN for 24 hours (86400s)
+// Drops server response time to near-zero for historical year views
+export const revalidate = 86400;
+
 export default async function YearPage({ params }: { params: Promise<{ year: string }> }) {
   const { year } = await params;
   const { error, stamps, years, issuesCountMap = {} } = await getYearPageData(year);

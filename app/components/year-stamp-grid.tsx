@@ -96,6 +96,8 @@ export default function YearStampGrid({ stamps }: YearStampGridProps) {
                 <img
                   src={stamp.image_url}
                   alt={stamp.name}
+                  loading="lazy"
+                  decoding="async"
                   className="h-[185px] min-h-[185px] max-h-[185px] max-w-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.12)] group-hover:scale-105 transition-transform duration-200"
                 />
               ) : (
