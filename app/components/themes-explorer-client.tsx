@@ -118,7 +118,7 @@ export default function ThemesExplorerClient({ initialThemes }: ThemesExplorerCl
       return THEME_THUMBNAIL_OVERRIDES["wildlife-nature"];
     }
 
-    return item.featuredImage || item.fallbackImage;
+    return item.featuredImage || "https://indianstampcatalog.vercel.app/favicon.ico";
   }
 
   return (
@@ -193,6 +193,8 @@ export default function ThemesExplorerClient({ initialThemes }: ThemesExplorerCl
                         <img
                           src={thumbnailImage}
                           alt={item.title}
+                          loading="lazy"
+                          decoding="async"
                           className="max-h-full max-w-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.16)] group-hover:scale-105 transition-transform duration-200"
                         />
                       </div>
