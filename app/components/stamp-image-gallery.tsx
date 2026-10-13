@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import Image from "next/image";
 
 type GalleryImage = {
   src: string;
@@ -61,16 +62,17 @@ export default function StampImageGallery({
         <div className="w-full flex justify-center items-center py-2.5 sm:py-3 px-3 bg-[#F1F4F7] rounded-xl border border-slate-200/70 overflow-hidden">
           <button
             type="button"
-            className="group cursor-zoom-in inline-flex items-center justify-center p-0 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
+            className="group relative w-full max-w-[540px] h-[400px] cursor-zoom-in inline-flex items-center justify-center p-0 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
             onClick={() => setActiveIndex(0)}
             aria-label={`View larger image: ${primaryImage.alt}`}
           >
-            <img
+            <Image
               src={primaryImage.src}
               alt={primaryImage.alt}
-              loading="eager"
-              decoding="sync"
-              className="max-w-[540px] w-auto max-h-[400px] object-contain drop-shadow-md rounded-sm block"
+              fill
+              priority
+              sizes="(max-width: 640px) calc(100vw - 2rem), 540px"
+              className="object-contain drop-shadow-md rounded-sm"
             />
           </button>
         </div>
@@ -89,11 +91,15 @@ export default function StampImageGallery({
                 className="bg-[#F1F4F7] p-2 rounded-xl border border-slate-200/70 hover:border-blue-400 transition"
                 onClick={() => setActiveIndex(firstDayCoverIndex)}
               >
-                <img
-                  src={firstDayCover.src}
-                  alt={firstDayCover.alt}
-                  className="max-w-[240px] max-h-[160px] object-contain rounded shadow-xs"
-                />
+                <span className="relative block w-[240px] h-[160px]">
+                  <Image
+                    src={firstDayCover.src}
+                    alt={firstDayCover.alt}
+                    fill
+                    sizes="240px"
+                    className="object-contain rounded shadow-xs"
+                  />
+                </span>
               </button>
             </div>
           ) : null}
@@ -109,11 +115,15 @@ export default function StampImageGallery({
                     className="bg-[#F1F4F7] p-2 rounded-xl border border-slate-200/70 hover:border-blue-400 transition"
                     onClick={() => setActiveIndex(brochureStartIndex + index)}
                   >
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="max-w-[200px] max-h-[160px] object-contain rounded shadow-xs"
-                    />
+                    <span className="relative block w-[200px] h-[160px]">
+                      <Image
+                        src={image.src}
+                        alt={image.alt}
+                        fill
+                        sizes="200px"
+                        className="object-contain rounded shadow-xs"
+                      />
+                    </span>
                   </button>
                 ))}
               </div>
@@ -151,12 +161,18 @@ export default function StampImageGallery({
             &#8592;
           </button>
 
-          <img
-            src={images[activeIndex].src}
-            alt={images[activeIndex].alt}
-            className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl"
+          <div
+            className="relative w-full h-[85vh]"
             onClick={(e) => e.stopPropagation()}
-          />
+          >
+            <Image
+              src={images[activeIndex].src}
+              alt={images[activeIndex].alt}
+              fill
+              sizes="100vw"
+              className="object-contain rounded shadow-2xl"
+            />
+          </div>
 
           <button
             type="button"

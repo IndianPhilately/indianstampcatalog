@@ -167,7 +167,6 @@ export async function getHomePageData() {
       issuesCountMap: {} as Record<number, number>,
       latestStamp: null as StampSummary | null,
       recentStamps: [] as StampSummary[],
-      randomStamps: [] as StampSummary[],
     };
   }
 
@@ -181,7 +180,6 @@ export async function getHomePageData() {
     issuesCountMap: getIssuesCountByYear(allStampsWithDate),
     latestStamp: recentList[0] ?? null,
     recentStamps: recentList.slice(1, 4),
-    randomStamps: recentList.slice(0, 3),
   };
 }
 

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { CuratedTheme } from "@/lib/catalog";
 
 type ThemesExplorerClientProps = {
@@ -189,13 +190,13 @@ export default function ThemesExplorerClient({ initialThemes }: ThemesExplorerCl
                   <div>
                     {/* Top Block: Borderless Stamp + Title Header + Navigation Pill */}
                     <div className="flex items-start gap-4 mb-2.5">
-                      <div className="w-[64px] h-[74px] min-w-[64px] flex items-center justify-center shrink-0">
-                        <img
+                      <div className="relative w-[64px] h-[74px] min-w-[64px] flex items-center justify-center shrink-0">
+                        <Image
                           src={thumbnailImage}
                           alt={item.title}
-                          loading="lazy"
-                          decoding="async"
-                          className="max-h-full max-w-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.16)] group-hover:scale-105 transition-transform duration-200"
+                          fill
+                          sizes="64px"
+                          className="object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.16)] group-hover:scale-105 transition-transform duration-200"
                         />
                       </div>
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { formatDate, getHomePageData } from "../lib/catalog";
 import DecadeYearWidget from "./components/decade-year-widget";
 
@@ -73,11 +74,15 @@ export default async function Home() {
                 <div className="sm:col-span-1 space-y-3">
                   <div className="flex flex-col items-center justify-center bg-[#F1F4F7] p-3 rounded-xl border border-slate-200/70 min-h-[190px]">
                     {latestStamp.image_url ? (
-                      <img 
-                        src={latestStamp.image_url} 
-                        alt={latestStamp.name} 
-                        className="w-full max-w-[200px] sm:max-w-[220px] rounded-sm drop-shadow-sm object-contain"
-                      />
+                      <div className="relative w-full max-w-[220px] h-[190px]">
+                        <Image
+                          src={latestStamp.image_url}
+                          alt={latestStamp.name}
+                          fill
+                          sizes="(max-width: 640px) 200px, 220px"
+                          className="rounded-sm drop-shadow-sm object-contain"
+                        />
+                      </div>
                     ) : (
                       <span className="text-xs text-slate-400">No image available</span>
                     )}
@@ -183,12 +188,14 @@ export default async function Home() {
                     href={`/stamp/${stamp.id}`}
                     className="group flex flex-col bg-white rounded-xl border border-slate-200/90 p-2 hover:border-blue-400 hover:shadow-xs transition duration-150"
                   >
-                    <div className="w-full aspect-square bg-[#F1F4F7] rounded-lg p-1.5 flex items-center justify-center overflow-hidden border border-slate-100">
+                    <div className="relative w-full aspect-square bg-[#F1F4F7] rounded-lg p-1.5 flex items-center justify-center overflow-hidden border border-slate-100">
                       {stamp.image_url ? (
-                        <img 
-                          src={stamp.image_url} 
-                          alt={stamp.name} 
-                          className="max-w-full max-h-full object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-200" 
+                        <Image
+                          src={stamp.image_url}
+                          alt={stamp.name}
+                          fill
+                          sizes="33vw"
+                          className="object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-200"
                         />
                       ) : (
                         <div className="w-full h-full bg-slate-200/60 rounded" />

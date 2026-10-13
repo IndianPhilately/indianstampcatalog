@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import CopyLinkButton from "@/app/components/copy-link-button";
 import StampImageGallery from "@/app/components/stamp-image-gallery";
@@ -262,14 +263,14 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
                     href={`/stamp/${item.id}`}
                     className="group flex flex-col bg-white rounded-xl border border-slate-200/90 p-2 hover:border-blue-400 hover:shadow-xs transition duration-150"
                   >
-                    <div className="w-full aspect-square bg-[#F1F4F7] rounded-lg p-1.5 flex items-center justify-center overflow-hidden border border-slate-100">
+                    <div className="relative w-full aspect-square bg-[#F1F4F7] rounded-lg p-1.5 flex items-center justify-center overflow-hidden border border-slate-100">
                       {item.image_url ? (
-                        <img 
-                          src={item.image_url} 
-                          alt={item.name} 
-                          loading="lazy"
-                          decoding="async"
-                          className="max-w-full max-h-full object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-200" 
+                        <Image
+                          src={item.image_url}
+                          alt={item.name}
+                          fill
+                          sizes="33vw"
+                          className="object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-200"
                         />
                       ) : (
                         <div className="w-full h-full bg-slate-200/60 rounded" />

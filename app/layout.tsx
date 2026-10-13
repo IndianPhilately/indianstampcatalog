@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
+import { Roboto } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import HeaderNav from "./components/header-nav";
 import "./globals.css";
+
+const roboto = Roboto({
+  weight: ["400", "500", "700"],
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Stamp Catalogue",
@@ -15,15 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={roboto.className}>
       <body className="text-slate-900 antialiased min-h-screen flex flex-col bg-[#e9eef5]">
         {/* Sticky Glassmorphism Header */}
         <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-xs">
@@ -31,9 +31,12 @@ export default function RootLayout({
             
             <div className="flex items-center justify-between w-full sm:w-auto gap-3.5">
               <div className="flex items-center gap-3">
-                <img 
-                  src="https://indianstampcatalog.vercel.app/favicon.ico" 
-                  alt="Indian Stamp Catalogue Logo" 
+                <Image
+                  src="https://indianstampcatalog.vercel.app/favicon.ico"
+                  alt="Indian Stamp Catalogue Logo"
+                  width={40}
+                  height={40}
+                  sizes="40px"
                   className="h-8 w-8 sm:h-10 sm:w-10 object-contain rounded shrink-0"
                 />
                 <div>

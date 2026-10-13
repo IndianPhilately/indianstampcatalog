@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { formatDate, type StampYearItem } from "@/lib/catalog";
 
@@ -91,14 +92,14 @@ export default function YearStampGrid({ stamps }: YearStampGridProps) {
             href={`/stamp/${stamp.id}`}
             className="group flex flex-col bg-white rounded-xl border border-slate-200/90 p-2.5 hover:border-blue-400 hover:shadow-md transition duration-150"
           >
-            <div className="w-full h-[210px] min-h-[210px] rounded-lg bg-[#F1F4F7] flex items-center justify-center p-2 overflow-hidden border border-slate-100/70">
+            <div className="relative w-full h-[210px] min-h-[210px] rounded-lg bg-[#F1F4F7] flex items-center justify-center p-2 overflow-hidden border border-slate-100/70">
               {stamp.image_url ? (
-                <img
+                <Image
                   src={stamp.image_url}
                   alt={stamp.name}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-[185px] min-h-[185px] max-h-[185px] max-w-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.12)] group-hover:scale-105 transition-transform duration-200"
+                  fill
+                  sizes="(max-width: 640px) 50vw, 33vw"
+                  className="object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.12)] group-hover:scale-105 transition-transform duration-200"
                 />
               ) : (
                 <span className="text-xs text-slate-400">Image unavailable</span>

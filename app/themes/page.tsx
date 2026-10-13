@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getThemesPageData } from "@/lib/catalog";
 import ThemesExplorerClient from "@/app/components/themes-explorer-client";
 

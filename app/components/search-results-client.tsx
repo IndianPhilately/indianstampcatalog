@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export type StampSearchResult = {
   id: string | number;
@@ -201,11 +202,13 @@ export default function SearchResultsClient({
               href={`/stamp/${stamp.id}`}
               className="group flex flex-col bg-white rounded-xl border border-slate-200/90 p-2.5 hover:border-blue-400 hover:shadow-md transition duration-150"
             >
-              <div className="w-full h-[180px] rounded-lg bg-[#F1F4F7] flex items-center justify-center p-2 overflow-hidden border border-slate-100">
-                <img
+              <div className="relative w-full h-[180px] rounded-lg bg-[#F1F4F7] flex items-center justify-center p-2 overflow-hidden border border-slate-100">
+                <Image
                   src={stamp.image_url || "https://indianstampcatalog.vercel.app/favicon.ico"}
                   alt={stamp.name}
-                  className="max-h-full max-w-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.12)] group-hover:scale-105 transition-transform duration-200"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                  className="object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.12)] group-hover:scale-105 transition-transform duration-200"
                 />
               </div>
 
