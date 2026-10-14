@@ -1,6 +1,14 @@
 import { searchStamps } from "@/lib/catalog";
 import SearchResultsClient from "@/app/components/search-results-client";
 
+export const metadata = {
+  title: "Search the Catalogue",
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
 export const dynamic = "force-dynamic";
 
 type SearchPageProps = {

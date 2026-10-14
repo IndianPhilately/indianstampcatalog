@@ -49,7 +49,9 @@ export default async function Home() {
           
           {/* 1. Welcome Card */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-950 mb-2 tracking-tight">Home</h2>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-950 mb-2 tracking-tight">
+              Indian Stamp Catalogue
+            </h1>
             <p className="text-slate-700 leading-relaxed text-sm sm:text-base">
               This site is for philatelists worldwide who collect Indian postal stamps. It serves as an online resource and reference for India&apos;s postage issues from independence to the latest releases. Each stamp tells a story of the nation&apos;s heritage, milestones, and remarkable personalities.
             </p>

@@ -6,11 +6,10 @@ import CopyLinkButton from "@/app/components/copy-link-button";
 import StampImageGallery from "@/app/components/stamp-image-gallery";
 import DecadeYearWidget from "@/app/components/decade-year-widget";
 import { formatDate, getStampDetails } from "@/lib/catalog";
+import { SITE_URL } from "@/lib/site-config";
 
 // Cache stamp details on Vercel Edge CDN for 24 hours (86400s)
 export const revalidate = 86400;
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://indianstampcatalog.vercel.app";
 
 // Helper to guarantee absolute URLs for social crawlers
 function toAbsoluteUrl(url?: string | null): string | null {
@@ -30,7 +29,7 @@ export async function generateMetadata({
 
   if (!stamp) {
     return {
-      title: "Stamp Not Found | Indian Stamp Catalog",
+      title: "Stamp Not Found",
     };
   }
 
@@ -43,7 +42,7 @@ export async function generateMetadata({
 
   return {
     metadataBase: new URL(SITE_URL),
-    title: `${stamp.name} | Indian Stamp Catalog`,
+    title: stamp.name,
     description: metaDescription,
     alternates: {
       canonical: shareUrl,
@@ -52,7 +51,7 @@ export async function generateMetadata({
       title: stamp.name,
       description: metaDescription,
       url: shareUrl,
-      siteName: "Indian Stamp Catalog",
+      siteName: "Indian Stamp Catalogue",
       type: "article",
       images: absoluteImageUrl
         ? [

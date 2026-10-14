@@ -13,8 +13,19 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Stamp Catalogue",
-  description: "DaakTicket India - Online resource and reference for Indian postage stamps.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://indianstampcatalog.vercel.app"
+  ),
+  title: {
+    default: "Indian Stamp Catalogue | Indian Postage Stamp Archive",
+    template: "%s | Indian Stamp Catalogue",
+  },
+  description:
+    "Explore India's commemorative postage stamps, browse issues by year, and discover the stories behind India's philatelic heritage.",
+  openGraph: {
+    siteName: "Indian Stamp Catalogue",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

@@ -8,6 +8,19 @@ import { getYearPageData } from "@/lib/catalog";
 // Drops server response time to near-zero for historical year views
 export const revalidate = 86400;
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ year: string }>;
+}) {
+  const { year } = await params;
+
+  return {
+    title: `${year} Indian Commemorative Stamps`,
+    description: `Browse India's commemorative postage stamps issued in ${year}, with issue details and catalogue information.`,
+  };
+}
+
 export default async function YearPage({ params }: { params: Promise<{ year: string }> }) {
   const { year } = await params;
   const { error, stamps, years, issuesCountMap = {} } = await getYearPageData(year);

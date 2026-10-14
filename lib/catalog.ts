@@ -183,6 +183,34 @@ export async function getHomePageData() {
   };
 }
 
+export async function getSitemapStamps() {
+  const pageSize = 1000;
+  const stamps: Array<{ id: string; issue_date: string }> = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("stamps")
+      .select("id, issue_date")
+      .order("issue_date", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      throw new Error(`Unable to load sitemap stamps: ${error.message}`);
+    }
+
+    const page = data ?? [];
+    stamps.push(...page);
+
+    if (page.length < pageSize) {
+      return stamps;
+    }
+
+    from += pageSize;
+  }
+}
+
 export async function getYearPageData(year: string) {
   const yearNumber = Number(year);
 

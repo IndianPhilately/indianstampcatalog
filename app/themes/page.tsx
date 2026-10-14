@@ -1,6 +1,12 @@
 import { getThemesPageData } from "@/lib/catalog";
 import ThemesExplorerClient from "@/app/components/themes-explorer-client";
 
+export const metadata = {
+  title: "Indian Stamp Themes",
+  description:
+    "Explore Indian commemorative stamps by theme, including history, personalities, wildlife, culture, science, and heritage.",
+};
+
 export const dynamic = "force-dynamic";
 
 export default async function ThemesPage() {
