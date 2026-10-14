@@ -26,6 +26,9 @@ export const metadata: Metadata = {
     siteName: "Indian Stamp Catalogue",
     type: "website",
   },
+  verification: {
+    google: "CwH9atfsHaT9QgsWboACs0rdc7edIfmVMNNTz7ZwILw",
+  },
 };
 
 export default function RootLayout({
