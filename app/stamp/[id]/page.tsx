@@ -6,7 +6,7 @@ import CopyLinkButton from "@/app/components/copy-link-button";
 import StampImageGallery from "@/app/components/stamp-image-gallery";
 import DecadeYearWidget from "@/app/components/decade-year-widget";
 import { formatDate, getStampDetails } from "@/lib/catalog";
-import { SITE_URL } from "@/lib/site-config";
+import { SITE_NAME, SITE_URL } from "@/lib/site-config";
 
 // Cache stamp details on Vercel Edge CDN for 24 hours (86400s)
 export const revalidate = 86400;
@@ -51,7 +51,7 @@ export async function generateMetadata({
       title: stamp.name,
       description: metaDescription,
       url: shareUrl,
-      siteName: "Indian Stamp Catalogue",
+      siteName: SITE_NAME,
       type: "article",
       images: absoluteImageUrl
         ? [

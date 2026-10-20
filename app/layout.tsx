@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Roboto } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import HeaderNav from "./components/header-nav";
+import { SITE_ALTERNATE_NAME, SITE_NAME, SITE_URL } from "@/lib/site-config";
 import "./globals.css";
 
 const roboto = Roboto({
@@ -13,22 +14,29 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://indianstampcatalog.vercel.app"
-  ),
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   title: {
-    default: "Indian Stamp Catalogue | Indian Postage Stamp Archive",
+    default: SITE_NAME,
     template: "%s | Indian Stamp Catalogue",
   },
   description:
     "Explore India's commemorative postage stamps, browse issues by year, and discover the stories behind India's philatelic heritage.",
   openGraph: {
-    siteName: "Indian Stamp Catalogue",
+    siteName: SITE_NAME,
     type: "website",
   },
   verification: {
     google: "CwH9atfsHaT9QgsWboACs0rdc7edIfmVMNNTz7ZwILw",
   },
+};
+
+const websiteStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  alternateName: SITE_ALTERNATE_NAME,
+  url: SITE_URL,
 };
 
 export default function RootLayout({
@@ -39,6 +47,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={roboto.className}>
       <body className="text-slate-900 antialiased min-h-screen flex flex-col bg-[#e9eef5]">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteStructuredData).replace(/</g, "\\u003c"),
+          }}
+        />
         {/* Sticky Glassmorphism Header */}
         <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-xs">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-0 sm:h-20 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 sm:gap-4">
