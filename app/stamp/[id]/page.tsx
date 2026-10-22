@@ -8,8 +8,12 @@ import DecadeYearWidget from "@/app/components/decade-year-widget";
 import { formatDate, getStampDetails } from "@/lib/catalog";
 import { SITE_NAME, SITE_URL } from "@/lib/site-config";
 
-// Cache stamp details on Vercel Edge CDN for 24 hours (86400s)
+// Generate stamp pages on demand and revalidate them every 24 hours.
 export const revalidate = 86400;
+
+export function generateStaticParams() {
+  return [];
+}
 
 // Helper to guarantee absolute URLs for social crawlers
 function toAbsoluteUrl(url?: string | null): string | null {
