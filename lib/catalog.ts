@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { supabase } from "./supabaseClient";
 
 export type StampSummary = {
@@ -369,7 +370,7 @@ export async function getRelatedStamps(
   return scored.slice(0, limit).map((item) => item.stamp);
 }
 
-export async function getStampDetails(id: string) {
+export const getStampDetails = cache(async (id: string) => {
   const { data: stamp, error } = await supabase
     .from("stamps")
     .select(
@@ -432,7 +433,7 @@ export async function getStampDetails(id: string) {
     years: getYearsFromStamps(allStampsWithDate),
     issuesCountMap: getIssuesCountByYear(allStampsWithDate),
   };
-}
+});
 
 export async function searchStamps(q: string | null) {
   if (!q) {
