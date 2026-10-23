@@ -118,11 +118,14 @@ export function formatDate(dateValue: string) {
 }
 
 export function getYearsFromStamps(
-  stamps: Array<{ issue_date: string }>
+  stamps: Array<{ issue_date: string | null }>
 ): number[] {
   return Array.from(
     new Set(
       stamps
+        .filter(
+          (stamp): stamp is { issue_date: string } => stamp.issue_date !== null,
+        )
         .map((stamp) => new Date(stamp.issue_date).getFullYear())
         .filter((year) => Number.isFinite(year))
     )
@@ -130,10 +133,11 @@ export function getYearsFromStamps(
 }
 
 export function getIssuesCountByYear(
-  stamps: Array<{ issue_date: string }>
+  stamps: Array<{ issue_date: string | null }>
 ): Record<number, number> {
   const map: Record<number, number> = {};
   for (const stamp of stamps) {
+    if (!stamp.issue_date) continue;
     const yr = new Date(stamp.issue_date).getFullYear();
     if (Number.isFinite(yr)) {
       map[yr] = (map[yr] || 0) + 1;
@@ -142,27 +146,50 @@ export function getIssuesCountByYear(
   return map;
 }
 
+export async function getAllStampDates() {
+  const pageSize = 1000;
+  const stamps: Array<{ id: string; issue_date: string | null }> = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("stamps")
+      .select("id, issue_date")
+      .order("issue_date", { ascending: false, nullsFirst: false })
+      .order("id", { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      return { data: [] as typeof stamps, error: error.message };
+    }
+
+    const page = data ?? [];
+    stamps.push(...page);
+
+    if (page.length < pageSize) {
+      return { data: stamps, error: null };
+    }
+  }
+}
+
 export async function getHomePageData() {
-  // Parallelized requests:
-  // 1. Fetch only the top 4 recent stamps with card fields
-  // 2. Fetch only issue_dates across all stamps to derive years, decade counts, and total stamp count
-  const [recentResult, yearsResult] = await Promise.all([
+  const [recentResult, allDatesResult, countResult] = await Promise.all([
     supabase
       .from("stamps")
       .select("id, name, issue_date, denomination, image_url, description")
       .order("issue_date", { ascending: false })
       .limit(4),
-    supabase
-      .from("stamps")
-      .select("issue_date")
-      .order("issue_date", { ascending: false }),
+    getAllStampDates(),
+    supabase.from("stamps").select("id", { count: "exact", head: true }),
   ]);
 
-  const error = recentResult.error || yearsResult.error;
+  const error =
+    recentResult.error?.message ??
+    allDatesResult.error ??
+    countResult.error?.message;
 
   if (error) {
     return {
-      error: error.message,
+      error,
       stampCount: 0,
       years: [] as number[],
       issuesCountMap: {} as Record<number, number>,
@@ -172,11 +199,11 @@ export async function getHomePageData() {
   }
 
   const recentList = (recentResult.data ?? []) as StampSummary[];
-  const allStampsWithDate = (yearsResult.data ?? []) as Array<{ issue_date: string }>;
+  const allStampsWithDate = allDatesResult.data;
 
   return {
     error: null,
-    stampCount: allStampsWithDate.length,
+    stampCount: countResult.count ?? 0,
     years: getYearsFromStamps(allStampsWithDate),
     issuesCountMap: getIssuesCountByYear(allStampsWithDate),
     latestStamp: recentList[0] ?? null,
@@ -185,31 +212,11 @@ export async function getHomePageData() {
 }
 
 export async function getSitemapStamps() {
-  const pageSize = 1000;
-  const stamps: Array<{ id: string; issue_date: string }> = [];
-  let from = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from("stamps")
-      .select("id, issue_date")
-      .order("issue_date", { ascending: false })
-      .order("id", { ascending: true })
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      throw new Error(`Unable to load sitemap stamps: ${error.message}`);
-    }
-
-    const page = data ?? [];
-    stamps.push(...page);
-
-    if (page.length < pageSize) {
-      return stamps;
-    }
-
-    from += pageSize;
+  const { data, error } = await getAllStampDates();
+  if (error) {
+    throw new Error(`Unable to load sitemap stamps: ${error}`);
   }
+  return data;
 }
 
 export async function getYearPageData(year: string) {
@@ -231,24 +238,21 @@ export async function getYearPageData(year: string) {
       .gte("issue_date", `${yearNumber}-01-01`)
       .lt("issue_date", `${yearNumber + 1}-01-01`)
       .order("issue_date", { ascending: true }),
-    supabase
-      .from("stamps")
-      .select("issue_date")
-      .order("issue_date", { ascending: false }),
+    getAllStampDates(),
   ]);
 
-  const error = yearStampsResult.error || allDatesResult.error;
+  const error = yearStampsResult.error?.message ?? allDatesResult.error;
 
   if (error) {
     return {
-      error: error.message,
+      error,
       stamps: (yearStampsResult.data ?? []) as StampYearItem[],
       years: [] as number[],
       issuesCountMap: {} as Record<number, number>,
     };
   }
 
-  const allStampsWithDate = (allDatesResult.data ?? []) as Array<{ issue_date: string }>;
+  const allStampsWithDate = allDatesResult.data;
 
   return {
     error: null,
@@ -405,14 +409,14 @@ export const getStampDetails = cache(async (id: string) => {
       .order("issue_date", { ascending: true })
       .limit(3),
     getRelatedStamps(stamp as StampRecord, 6),
-    supabase.from("stamps").select("issue_date").order("issue_date", { ascending: false }),
+    getAllStampDates(),
   ]);
 
-  const queryError = previousResult.error ?? nextResult.error ?? yearsResult.error;
+  const queryError = previousResult.error ?? nextResult.error;
 
-  if (queryError) {
+  if (queryError || yearsResult.error) {
     return {
-      error: queryError.message,
+      error: queryError?.message ?? yearsResult.error,
       stamp: stamp as StampRecord,
       previousStamps: [] as StampAdjacentItem[],
       nextStamps: [] as StampAdjacentItem[],
@@ -422,7 +426,7 @@ export const getStampDetails = cache(async (id: string) => {
     };
   }
 
-  const allStampsWithDate = (yearsResult.data ?? []) as Array<{ issue_date: string }>;
+  const allStampsWithDate = yearsResult.data;
 
   return {
     error: null,

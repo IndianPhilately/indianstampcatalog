@@ -23,6 +23,12 @@ Use this skill to review or implement the Indian stamp catalogue search experien
 - In `app/search/page.tsx`, a supplied `themeTitle` takes precedence over `q` and calls `searchStampsByTheme`. That function accepts only curated theme titles and filters the `stamps.theme` column using case-insensitive exact `ILIKE` (no wildcard characters are added). The results include the usual stamp display fields and are ordered newest first.
 - General text search remains a separate behavior: `q` searches name, theme, and description only when `themeTitle` is not supplied.
 
+## Catalogue Counts and Year Data
+
+- Supabase limits rows returned by a normal query. Do not calculate catalogue-wide totals or year counts from one unpaginated `.select()` response.
+- `getHomePageData` gets the catalogue total with an exact count query and obtains all stamp IDs/dates through `getAllStampDates`. That helper uses stable ordering and `.range()` pagination so year lists, per-year issue counts, and sitemap stamp URLs remain complete beyond the default row limit.
+- The homepage, year pages, stamp-detail year widget, and sitemap share this paginated fetch. Year aggregation skips null or invalid dates, while the sitemap still includes stamps without dates. Keep the exact-count total separate so undated stamps remain included in the catalogue total.
+
 ## Exact Primary Search Behavior
 
 The primary search is implemented by `searchStamps` in `lib/catalog.ts` and called from `app/search/page.tsx`.
