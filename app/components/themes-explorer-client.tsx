@@ -177,8 +177,7 @@ export default function ThemesExplorerClient({ initialThemes }: ThemesExplorerCl
         {filteredAndSortedThemes.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredAndSortedThemes.map((item) => {
-              const firstWord = item.title.trim().split(/\s+/)[0].replace(/[^a-zA-Z0-9]/g, "");
-              const searchHref = `/search?q=${encodeURIComponent(firstWord)}&themeTitle=${encodeURIComponent(item.title)}`;
+              const searchHref = `/search?themeTitle=${encodeURIComponent(item.title)}`;
               const thumbnailImage = getThumbnailImage(item);
 
               return (

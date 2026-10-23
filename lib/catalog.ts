@@ -461,15 +461,45 @@ export async function searchStamps(q: string | null) {
   return (data ?? []) as StampSearchResult[];
 }
 
-export async function getThemesPageData() {
-  const { data: stamps, error } = await supabase
+export async function searchStampsByTheme(theme: string | null) {
+  const searchTerm = theme?.trim().toLocaleLowerCase();
+  const canonicalTheme = THEME_DEFINITIONS.find(
+    (definition) => definition.title.toLocaleLowerCase() === searchTerm,
+  )?.title;
+
+  if (!canonicalTheme) {
+    return [] as StampSearchResult[];
+  }
+
+  const { data, error } = await supabase
     .from("stamps")
-    .select("id, theme, image_url, issue_date")
+    .select("id, name, issue_date, denomination, theme, image_url")
+    .ilike("theme", canonicalTheme)
     .order("issue_date", { ascending: false });
 
   if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as StampSearchResult[];
+}
+
+export async function getThemesPageData() {
+  const [{ count: totalCatalogedStamps, error: countError }, { data: earliestStamp, error: yearError }] =
+    await Promise.all([
+      supabase.from("stamps").select("id", { count: "exact", head: true }),
+      supabase
+        .from("stamps")
+        .select("issue_date")
+        .not("issue_date", "is", null)
+        .order("issue_date", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+  if (countError || yearError) {
     return {
-      error: error.message,
+      error: countError?.message || yearError?.message || "Unable to load catalogue totals.",
       themes: [] as CuratedTheme[],
       totalThemesCount: 0,
       totalCatalogedStamps: 0,
@@ -477,34 +507,68 @@ export async function getThemesPageData() {
     };
   }
 
-  const catalog = stamps ?? [];
-  const totalCatalogedStamps = catalog.length;
+  const earliestYear = earliestStamp?.issue_date
+    ? new Date(earliestStamp.issue_date).getFullYear()
+    : 1947;
 
-  const validYears = catalog
-    .map((s) => new Date(s.issue_date).getFullYear())
-    .filter((yr) => Number.isFinite(yr));
-  const earliestYear = validYears.length > 0 ? Math.min(...validYears) : 1947;
+  const themeResults = await Promise.all(
+    THEME_DEFINITIONS.map(async (definition) => {
+      const [{ count, error: themeCountError }, { data: imageStamp, error: imageError }] =
+        await Promise.all([
+          supabase
+            .from("stamps")
+            .select("id", { count: "exact", head: true })
+            .ilike("theme", definition.title),
+          supabase
+            .from("stamps")
+            .select("image_url")
+            .ilike("theme", definition.title)
+            .not("image_url", "is", null)
+            .order("issue_date", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
 
-  // Case-insensitive, whitespace-tolerant exact matching
-  const populatedThemes: CuratedTheme[] = THEME_DEFINITIONS.map((def) => {
-    const targetTitle = def.title.trim().toLowerCase();
-    const matchingStamps = catalog.filter(
-      (s) => s.theme && s.theme.trim().toLowerCase() === targetTitle
-    );
-    const firstImage = matchingStamps.find((s) => Boolean(s.image_url))?.image_url;
+      if (themeCountError || imageError) {
+        return {
+          error: themeCountError?.message || imageError?.message || "Unable to load theme data.",
+        };
+      }
 
+      return {
+        theme: {
+          ...definition,
+          count: count ?? 0,
+          featuredImage:
+            imageStamp?.image_url || "https://indianstampcatalog.vercel.app/favicon.ico",
+        } satisfies CuratedTheme,
+      };
+    }),
+  );
+
+  const failedTheme = themeResults.find((result) => "error" in result);
+  if (failedTheme && "error" in failedTheme) {
     return {
-      ...def,
-      count: matchingStamps.length,
-      featuredImage: firstImage || "https://indianstampcatalog.vercel.app/favicon.ico",
+      error: failedTheme.error,
+      themes: [] as CuratedTheme[],
+      totalThemesCount: 0,
+      totalCatalogedStamps: 0,
+      earliestYear: 1947,
     };
-  });
+  }
+
+  const populatedThemes: CuratedTheme[] = [];
+  for (const result of themeResults) {
+    if ("theme" in result && result.theme) {
+      populatedThemes.push(result.theme);
+    }
+  }
 
   return {
     error: null,
     themes: populatedThemes,
     totalThemesCount: populatedThemes.length,
-    totalCatalogedStamps,
-    earliestYear,
+    totalCatalogedStamps: totalCatalogedStamps ?? 0,
+    earliestYear: Number.isFinite(earliestYear) ? earliestYear : 1947,
   };
 }
