@@ -256,11 +256,11 @@ export default async function StampPage({ params }: { params: Promise<{ id: stri
             <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-sm">
               <div className="pb-3.5 border-b border-slate-100 mb-3">
                 <h3 className="text-base sm:text-lg font-bold text-slate-950 leading-snug">Related Stamps</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Thematically linked issues</p>
+                <p className="text-xs text-slate-500 mt-0.5">Semantically similar issues</p>
               </div>
 
               <div className="grid grid-cols-3 gap-2.5">
-                {relatedStamps.slice(0, 3).map((item) => (
+                {relatedStamps.slice(0, 6).map((item) => (
                   <Link 
                     key={item.id} 
                     href={`/stamp/${item.id}`}

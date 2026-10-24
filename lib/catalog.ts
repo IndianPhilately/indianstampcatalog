@@ -31,6 +31,9 @@ export type StampListItem = Pick<
 
 export type StampYearItem = StampListItem;
 export type StampAdjacentItem = StampListItem;
+export type StampRelatedItem = StampAdjacentItem & {
+  similarity: number;
+};
 
 export type StampSearchResult = Omit<
   Pick<StampRecord, "id" | "name" | "issue_date" | "denomination" | "theme" | "image_url">,
@@ -264,116 +267,48 @@ export async function getYearPageData(year: string) {
   };
 }
 
-function getSignificantTitleKeywords(title: string): string[] {
-  const stopWords = new Set([
-    "india",
-    "stamp",
-    "stamps",
-    "postage",
-    "first",
-    "day",
-    "cover",
-    "the",
-    "and",
-    "of",
-    "in",
-    "to",
-    "a",
-    "an",
-    "on",
-    "for",
-    "with",
-    "centenary",
-    "series",
-  ]);
+function isStampRelatedItem(value: unknown): value is StampRelatedItem {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
 
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((word) => word.length > 3 && !stopWords.has(word));
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.name === "string" &&
+    typeof item.issue_date === "string" &&
+    (typeof item.denomination === "string" || item.denomination === null) &&
+    (typeof item.theme === "string" || item.theme === null) &&
+    (typeof item.image_url === "string" || item.image_url === null) &&
+    typeof item.similarity === "number" &&
+    Number.isFinite(item.similarity)
+  );
 }
 
 export async function getRelatedStamps(
-  currentStamp: StampRecord,
+  stampId: string,
   limit: number = 6
-): Promise<StampAdjacentItem[]> {
-  const currentYear = new Date(currentStamp.issue_date).getFullYear();
-  const titleKeywords = getSignificantTitleKeywords(currentStamp.name);
-
-  let query = supabase
-    .from("stamps")
-    .select("id, name, issue_date, denomination, theme, image_url")
-    .neq("id", currentStamp.id);
-
-  const filterConditions: string[] = [];
-
-  for (const kw of titleKeywords.slice(0, 3)) {
-    filterConditions.push(`name.ilike.%${kw}%`);
-  }
-
-  if (currentStamp.theme) {
-    filterConditions.push(`theme.eq."${currentStamp.theme}"`);
-  }
-
-  if (Number.isFinite(currentYear)) {
-    filterConditions.push(
-      `and(issue_date.gte.${currentYear - 5}-01-01,issue_date.lte.${currentYear + 5}-12-31)`
-    );
-  }
-
-  if (filterConditions.length > 0) {
-    query = query.or(filterConditions.join(","));
-  }
-
-  const { data, error } = await query.limit(50);
-
-  if (error || !data || data.length === 0) {
-    const fallback = await supabase
-      .from("stamps")
-      .select("id, name, issue_date, denomination, theme, image_url")
-      .neq("id", currentStamp.id)
-      .order("issue_date", { ascending: false })
-      .limit(limit);
-    return (fallback.data ?? []) as StampAdjacentItem[];
-  }
-
-  const scored = data.map((candidate) => {
-    let score = 0;
-    const candYear = new Date(candidate.issue_date).getFullYear();
-    const candNameLower = candidate.name.toLowerCase();
-
-    let matchedKeywordsCount = 0;
-    for (const kw of titleKeywords) {
-      if (candNameLower.includes(kw)) {
-        matchedKeywordsCount++;
-      }
-    }
-
-    if (matchedKeywordsCount > 0) {
-      score += 120 + (matchedKeywordsCount - 1) * 40;
-    }
-
-    if (currentStamp.theme && candidate.theme === currentStamp.theme) {
-      score += 40;
-    }
-
-    if (Number.isFinite(currentYear) && Number.isFinite(candYear)) {
-      const yearDiff = Math.abs(currentYear - candYear);
-      if (yearDiff === 0) score += 20;
-      else if (yearDiff <= 3) score += 12;
-      else if (yearDiff <= 8) score += 5;
-    }
-
-    return { stamp: candidate as StampAdjacentItem, score };
+): Promise<{ stamps: StampRelatedItem[]; error: string | null }> {
+  const matchCount = Number.isFinite(limit)
+    ? Math.max(0, Math.min(6, Math.floor(limit)))
+    : 6;
+  const { data, error } = await supabase.rpc("match_related_stamps", {
+    target_id: stampId,
+    match_count: matchCount,
   });
 
-  scored.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return (b.stamp.issue_date || "").localeCompare(a.stamp.issue_date || "");
-  });
+  if (error) {
+    return { stamps: [], error: error.message };
+  }
 
-  return scored.slice(0, limit).map((item) => item.stamp);
+  if (!Array.isArray(data) || !data.every(isStampRelatedItem)) {
+    return {
+      stamps: [],
+      error: "The related-stamps RPC returned an invalid response.",
+    };
+  }
+
+  return { stamps: data, error: null };
 }
 
 export const getStampDetails = cache(async (id: string) => {
@@ -397,7 +332,7 @@ export const getStampDetails = cache(async (id: string) => {
     };
   }
 
-  const [previousResult, nextResult, relatedStamps, yearsResult] = await Promise.all([
+  const [previousResult, nextResult, relatedResult, yearsResult] = await Promise.all([
     supabase
       .from("stamps")
       .select("id, name, issue_date, denomination, theme, image_url")
@@ -410,11 +345,14 @@ export const getStampDetails = cache(async (id: string) => {
       .gt("issue_date", stamp.issue_date)
       .order("issue_date", { ascending: true })
       .limit(3),
-    getRelatedStamps(stamp as StampRecord, 6),
+    getRelatedStamps(id, 6),
     getAllStampDates(),
   ]);
 
-  const queryError = previousResult.error ?? nextResult.error;
+  const queryError =
+    previousResult.error ??
+    nextResult.error ??
+    (relatedResult.error ? { message: relatedResult.error } : null);
 
   if (queryError || yearsResult.error) {
     return {
@@ -435,7 +373,7 @@ export const getStampDetails = cache(async (id: string) => {
     stamp: stamp as StampRecord,
     previousStamps: (previousResult.data ?? []) as StampAdjacentItem[],
     nextStamps: (nextResult.data ?? []) as StampAdjacentItem[],
-    relatedStamps,
+    relatedStamps: relatedResult.stamps,
     years: getYearsFromStamps(allStampsWithDate),
     issuesCountMap: getIssuesCountByYear(allStampsWithDate),
   };
