@@ -9,8 +9,9 @@ Use this skill to review or implement the Indian stamp catalogue search experien
 
 ## Implementation Map
 
-- `app/search/page.tsx` reads the search query and fetches initial matches.
-- `lib/catalog.ts` implements `searchStamps`; search currently matches name, theme, and description.
+- `app/search/page.tsx` reads URL state and renders the client search experience.
+- `app/api/search-catalog/route.ts` returns all searchable stamp records using stable, paginated Supabase reads.
+- `lib/search-index.ts` builds and queries the client-side MiniSearch index.
 - `app/components/search-results-client.tsx` owns URL-derived state, view-specific filtering, sorting, pagination, and result rendering.
 - `app/components/results-table.tsx` renders the table, sorting controls, filter popovers, and its empty state.
 - `app/components/pagination-controls.tsx` renders the page-size selector and page navigation.
@@ -20,8 +21,8 @@ Use this skill to review or implement the Indian stamp catalogue search experien
 
 - The Themes page calls `getThemesPageData` in `lib/catalog.ts`. It uses Supabase exact-count queries for total catalogue rows and for each curated theme, avoiding the default row cap that made counts computed from fetched rows incomplete. Theme counts use the same case-insensitive exact `theme` match as theme-result search. The page separately fetches the earliest issue date and a featured image per theme.
 - Theme cards link to `/search?themeTitle=<full theme title>`; they must not use the first word of the category as a general search query.
-- In `app/search/page.tsx`, a supplied `themeTitle` takes precedence over `q` and calls `searchStampsByTheme`. That function accepts only curated theme titles and filters the `stamps.theme` column using case-insensitive exact `ILIKE` (no wildcard characters are added). The results include the usual stamp display fields and are ordered newest first.
-- General text search remains a separate behavior: `q` searches name, theme, and description only when `themeTitle` is not supplied.
+- A supplied `themeTitle` takes precedence over `q` and matches a curated theme title exactly against the loaded catalogue's `theme` values. Theme mode does not use fuzzy or prefix matching; results are ordered newest first.
+- General text search indexes name, theme, and description only when `themeTitle` is not supplied.
 
 ## Catalogue Counts and Year Data
 
@@ -29,34 +30,35 @@ Use this skill to review or implement the Indian stamp catalogue search experien
 - `getHomePageData` gets the catalogue total with an exact count query and obtains all stamp IDs/dates through `getAllStampDates`. That helper uses stable ordering and `.range()` pagination so year lists, per-year issue counts, and sitemap stamp URLs remain complete beyond the default row limit.
 - The homepage, year pages, stamp-detail year widget, and sitemap share this paginated fetch. Year aggregation skips null or invalid dates, while the sitemap still includes stamps without dates. Keep the exact-count total separate so undated stamps remain included in the catalogue total.
 
-## Exact Primary Search Behavior
+## MiniSearch Primary Search Behavior
 
-The primary search is implemented by `searchStamps` in `lib/catalog.ts` and called from `app/search/page.tsx`.
+The browser builds one MiniSearch index from the complete, versioned catalogue response served by `app/api/search-catalog/route.ts`.
 
-- **Input:** The search page reads the `q` URL parameter, trims whitespace, and passes it to `searchStamps`. The helper trims it again. A missing or whitespace-only query returns an empty result list; it does not return the whole catalogue.
-- **Database table and searched columns:** It queries the Supabase `stamps` table and ORs matches across `name`, `theme`, and `description`. It does not search `issue_date`, `denomination`, `keywords`, or other columns as part of the primary query.
-- **Returned columns:** Matching rows select `id`, `name`, `issue_date`, `denomination`, `theme`, and `image_url`. `issue_date` is also used to order matches newest first; it is not searched.
-- **Matching:** Each condition uses Postgres `ILIKE` with `%` added before and after the input: `name.ilike.%<q>%`, `theme.ilike.%<q>%`, and `description.ilike.%<q>%`. Matching is case-insensitive and substring-based; a term may occur anywhere in any one searched field. All three conditions are joined with OR, so a row matching any one field is included. There is no tokenization, stemming, fuzzy matching, or requirement that every word match.
-- **Input normalization:** Only leading and trailing whitespace is removed. The primary query is not lowercased or otherwise normalized in application code; case-insensitivity comes from `ILIKE`.
-- **Wildcards:** `%` and `_` are Postgres `LIKE`/`ILIKE` pattern metacharacters. Since the input is interpolated directly into a pattern already surrounded by `%`, a typed `%` can match any sequence of characters and `_` can match one character; they are not escaped to require literal percent/underscore characters. `*` and `?` are not Postgres `LIKE` wildcards and are ordinarily matched literally.
-- **Special characters and errors:** The input is interpolated directly into Supabase `.or()` filter syntax without escaping or quoting. Besides SQL pattern metacharacters, punctuation reserved by PostgREST's filter grammar (notably commas and parentheses) can affect parsing or make a query fail rather than behave like a literal substring. Do not claim arbitrary punctuation is safely literal. The helper throws when Supabase returns an error; it does not silently turn a failed search into an empty success.
-- **Result ordering:** The database orders matching records by `issue_date` descending before returning them.
+- **Catalogue fields:** The endpoint selects `id`, `name`, `theme`, `description`, `issue_date`, `denomination`, and `image_url` from `stamps`. Only `name`, `theme`, and `description` are indexed. Dates and denominations are for display, sorting, and filters, not text matching.
+- **Complete fetch:** The endpoint obtains the exact row count, pages through results with stable ID ordering, then verifies count and ID uniqueness before returning success. Failed or partial loads return an error and the client offers retry; they must not appear as zero search matches.
+- **Cache freshness:** The browser revalidates its in-memory catalogue index after five minutes, checking at least once per minute and when the search tab becomes visible. Successful refreshes replace the index; a failed background refresh keeps the last usable results visible and exposes a retry notice. The API advertises a five-minute shared-cache TTL with stale-while-revalidate; production CDN behavior still requires verification.
+- **Normalization and tokens:** Search and indexed terms use Unicode NFKC normalization and lowercase conversion; diacritics are preserved. Unicode letters, combining marks, and numbers form tokens; punctuation separates them. There is no stemming or stop-word removal.
+- **Matching:** Multiple terms use AND semantics and may match across indexed fields on the same stamp. Each token first uses exact and prefix matching (prefix only for tokens longer than three characters). Only when that token has no exact/prefix matches does it fall back to `0.2` fuzzy matching (MiniSearch rounds edit distance, capped at two) and exact adjacent-transposition alternatives for terms four through seven characters. This lets `nerhu` match `Nehru` without returning `Swamp` for `Stamp` when exact/prefix matches exist. Longer typo terms use MiniSearch's fuzzy fallback; terms up to three characters remain exact. Fallback is per token, preserving AND behavior for multi-token queries.
+- **Special characters:** Punctuation is not wildcard syntax. `%`, `_`, `*`, and `?` are token separators, and punctuation-only input returns no matches.
+- **Themes:** `themeTitle` overrides `q`, is validated against curated theme names, and uses normalized exact equality rather than fuzzy or prefix search.
+- **Empty query:** Missing or whitespace-only `q` shows all catalogue records, newest issue dates first.
+- **Ordering:** Non-empty text search defaults to MiniSearch relevance; equal scores break by issue date descending and stable ID. An explicit sort overrides relevance. Blank and exact-theme results default to newest first.
+- **Query length:** Search queries are limited to 200 characters.
 
-The result view's filters are a separate, client-side stage over the rows returned by the primary search. They cannot add records that the `q` query did not fetch. The grid theme/decade/denomination controls and table title/category/year/denomination filters are not additional database search columns.
+The result view's filters run locally after text or exact-theme matching. Grid theme/decade/denomination and table title/category/year/denomination filters are not additional text-search fields.
 
-| Example input | Current primary-search meaning |
+| Example input | MiniSearch meaning |
 | --- | --- |
-| `gandhi` | Case-insensitive substring in name, theme, or description |
-| `gandhi stamp` | The literal phrase as a substring; not two independently tokenized terms |
-| `%` | A broad pattern that can match any sequence in one of the searched fields |
-| `_` | Matches one character in the pattern |
-| `*` or `?` | Not wildcard operators for `ILIKE`; ordinarily literal characters |
-| `name,theme` or parentheses | May be interpreted as `.or()` grammar, not necessarily literal query text |
+| `gandhi` | Case-insensitive token match in name, theme, or description; exact/prefix matches take precedence over fuzzy matches |
+| `nerhu` | Can match `Nehru` through typo fallback when there are no exact/prefix matches for that token |
+| `Stamp` | Does not return near-matches such as `Swamp` if exact/prefix matches exist |
+| `gandhi stamp` | Both terms must match the same stamp, possibly across different indexed fields |
+| `%`, `_`, `*`, `?` | Punctuation separators, not wildcards; punctuation-only input returns no matches |
 
 ## Workflow
 
-1. Read the feature requirements and the implementation files above before making a change. Check the current repository patterns and the installed Next.js guides for any Next.js API changes relevant to the work.
-2. Trace the complete data flow: URL query → server search → initial results → active-view filters → sorting → page slice → rendered results.
+1. Read the feature requirements and implementation files above before making a change. Check current repository patterns and the installed Next.js guides for relevant API changes.
+2. Trace the complete data flow: URL query → catalogue fetch/index → local search → active-view filters → sorting → page slice → rendered results. Verify catalogue refresh after five minutes and on tab visibility, with request deduplication and stale-result retention if refresh fails.
 3. Preserve the independent filter behavior:
    - Grid view applies the header theme, decade, and denomination filters.
    - Table view applies the title, category, year-range, and denomination column filters.
@@ -70,7 +72,7 @@ The result view's filters are a separate, client-side stage over the rows return
 
 ## Search and Filter Review Checks
 
-- Search should match only the intended catalogue fields and should behave predictably for empty input and punctuation.
+- Search should match only the intended catalogue fields and behave predictably for empty input and punctuation.
 - Normalize text consistently for case-insensitive matching. Use meaningful denomination tokens or explicit normalized categories; do not match a category using a single-character substring such as `a`, `p`, or `r`, which creates false positives.
 - When a decade or year range is active, reject records whose issue date is missing or cannot be parsed. Do not let a blank date pass a decade filter simply because the date condition was skipped.
 - Make category filtering an exact membership check against the allowed category values.

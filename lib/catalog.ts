@@ -32,10 +32,12 @@ export type StampListItem = Pick<
 export type StampYearItem = StampListItem;
 export type StampAdjacentItem = StampListItem;
 
-export type StampSearchResult = Pick<
-  StampRecord,
-  "id" | "name" | "issue_date" | "denomination" | "theme" | "image_url"
->;
+export type StampSearchResult = Omit<
+  Pick<StampRecord, "id" | "name" | "issue_date" | "denomination" | "theme" | "image_url">,
+  "issue_date"
+> & {
+  issue_date: string | null;
+};
 
 export type CuratedTheme = {
   id: string;
@@ -438,55 +440,6 @@ export const getStampDetails = cache(async (id: string) => {
     issuesCountMap: getIssuesCountByYear(allStampsWithDate),
   };
 });
-
-export async function searchStamps(q: string | null) {
-  if (!q) {
-    return [] as StampSearchResult[];
-  }
-
-  const searchTerm = q.trim();
-
-  if (!searchTerm) {
-    return [] as StampSearchResult[];
-  }
-
-  const { data, error } = await supabase
-    .from("stamps")
-    .select("id, name, issue_date, denomination, theme, image_url")
-    .or(
-      `name.ilike.%${searchTerm}%,theme.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`
-    )
-    .order("issue_date", { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return (data ?? []) as StampSearchResult[];
-}
-
-export async function searchStampsByTheme(theme: string | null) {
-  const searchTerm = theme?.trim().toLocaleLowerCase();
-  const canonicalTheme = THEME_DEFINITIONS.find(
-    (definition) => definition.title.toLocaleLowerCase() === searchTerm,
-  )?.title;
-
-  if (!canonicalTheme) {
-    return [] as StampSearchResult[];
-  }
-
-  const { data, error } = await supabase
-    .from("stamps")
-    .select("id, name, issue_date, denomination, theme, image_url")
-    .ilike("theme", canonicalTheme)
-    .order("issue_date", { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return (data ?? []) as StampSearchResult[];
-}
 
 export async function getThemesPageData() {
   const [{ count: totalCatalogedStamps, error: countError }, { data: earliestStamp, error: yearError }] =

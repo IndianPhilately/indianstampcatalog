@@ -31,8 +31,9 @@ export type SortOrder = "asc" | "desc";
 type ResultsTableProps = {
   stamps: StampSearchResult[];
   filters: ColumnFilters;
-  sortField: SortField;
+  sortField: SortField | null;
   sortOrder: SortOrder;
+  emptyMessage?: string;
   onFilterChange: (filters: ColumnFilters) => void;
   onSortChange: (field: SortField, order: SortOrder) => void;
 };
@@ -327,6 +328,7 @@ export default function ResultsTable({
   filters,
   sortField,
   sortOrder,
+  emptyMessage = "No matching results found for the active filters.",
   onFilterChange,
   onSortChange,
 }: ResultsTableProps) {
@@ -444,7 +446,7 @@ export default function ResultsTable({
           ) : (
             <tr>
               <td colSpan={COLUMNS.length + 2} className="px-4 py-12 text-center text-sm text-slate-500">
-                No matching results found for the active filters.
+                {emptyMessage}
               </td>
             </tr>
           )}

@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import type { StampSearchResult } from "@/lib/catalog";
+import {
+  getCachedSearchCatalogueIndex,
+  loadSearchCatalogueIndex,
+  MAX_SEARCH_QUERY_LENGTH,
+  SEARCH_CATALOGUE_CACHE_TTL_MS,
+  searchCatalogue,
+  type SearchCatalogueIndex,
+} from "@/lib/search-index";
 import PaginationControls, {
   DEFAULT_PAGE_SIZE,
   PAGE_SIZE_OPTIONS,
@@ -19,7 +26,6 @@ import ResultsTable, {
 import ViewToggle, { type ViewMode } from "@/app/components/view-toggle";
 
 type SearchResultsClientProps = {
-  initialStamps: StampSearchResult[];
   searchQuery?: string;
   themeTitle?: string;
 };
@@ -32,6 +38,7 @@ function readPageSize(value: string | null): PageSize {
 }
 
 const SORT_OPTIONS = [
+  { value: "relevance", label: "Relevance" },
   { value: "date-asc", label: "Oldest first" },
   { value: "date-desc", label: "Newest first" },
   { value: "name-asc", label: "Title (A–Z)" },
@@ -44,19 +51,25 @@ const SORT_OPTIONS = [
 
 type SortOption = (typeof SORT_OPTIONS)[number]["value"];
 
-function readSortOption(value: string | null): SortOption {
+function readSortOption(value: string | null, defaultSort: SortOption): SortOption {
   return SORT_OPTIONS.some((option) => option.value === value)
     ? (value as SortOption)
-    : "date-desc";
+    : defaultSort;
 }
 
-function sortValue(option: SortOption): { field: SortField; order: SortOrder } {
+function sortValue(option: SortOption): { field: SortField; order: SortOrder } | null {
+  if (option === "relevance") return null;
   const [sortKey, order] = option.split("-");
   const field: SortField = sortKey === "date" ? "issue_date" : (sortKey as SortField);
   return { field, order: order as SortOrder };
 }
 
 const SORT_COLLATOR = new Intl.Collator(undefined, { numeric: true });
+const DENOMINATION_TERMS: Record<string, string[]> = {
+  anna: ["anna", "annas", "a"],
+  paisa: ["p", "paisa", "paise", "np"],
+  rupee: ["r", "rupee", "rupees", "rs", "inr"],
+};
 
 function subscribeToDesktopChanges(callback: () => void) {
   const mediaQuery = window.matchMedia("(min-width: 768px)");
@@ -96,18 +109,86 @@ function writeSearchParams(
 }
 
 export default function SearchResultsClient({
-  initialStamps = [],
   searchQuery = "",
   themeTitle = "",
 }: SearchResultsClientProps) {
   const searchParams = useSearchParams();
+  const [catalogue, setCatalogue] = useState<SearchCatalogueIndex | null>(
+    getCachedSearchCatalogueIndex,
+  );
+  const [catalogueError, setCatalogueError] = useState("");
+  const [catalogueRefreshError, setCatalogueRefreshError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(
+    () => getCachedSearchCatalogueIndex() === null,
+  );
   const isDesktop = useSyncExternalStore(
     subscribeToDesktopChanges,
     getIsDesktop,
     getServerIsDesktop,
   );
   const currentQuery = searchParams.toString();
+  const activeSearchQuery = searchParams.get("q")?.trim() ?? searchQuery;
+  const activeThemeTitle = searchParams.get("themeTitle")?.trim() || themeTitle;
   const previousSearchQuery = useRef(searchQuery);
+
+  const refreshCatalogue = () => {
+    setCatalogueRefreshError("");
+    void loadSearchCatalogueIndex()
+      .then((loadedCatalogue) => {
+        setCatalogue(loadedCatalogue);
+        setCatalogueError("");
+        setIsLoading(false);
+      })
+      .catch((error: unknown) => {
+        setCatalogueRefreshError(
+          error instanceof Error
+            ? error.message
+            : "The search catalogue could not be refreshed.",
+        );
+      });
+  };
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    loadSearchCatalogueIndex()
+      .then((loadedCatalogue) => {
+        if (isCurrent) setCatalogue(loadedCatalogue);
+      })
+      .catch((error: unknown) => {
+        if (isCurrent) {
+          setCatalogueError(
+            error instanceof Error
+              ? error.message
+              : "The search catalogue could not be loaded. Please try again.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isCurrent) setIsLoading(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [retryCount]);
+
+  useEffect(() => {
+    const refreshIfStale = () => {
+      if (document.visibilityState === "visible") refreshCatalogue();
+    };
+    const intervalId = window.setInterval(
+      refreshIfStale,
+      Math.min(60_000, SEARCH_CATALOGUE_CACHE_TTL_MS),
+    );
+    document.addEventListener("visibilitychange", refreshIfStale);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refreshIfStale);
+    };
+  }, []);
 
   useEffect(() => {
     if (previousSearchQuery.current !== searchQuery) {
@@ -125,7 +206,9 @@ export default function SearchResultsClient({
   const selectedTheme = searchParams.get("theme") || "all";
   const selectedEra = searchParams.get("era") || "all";
   const selectedDenom = searchParams.get("denom") || "all";
-  const sortOption = readSortOption(searchParams.get("sort"));
+  const defaultSort: SortOption =
+    activeSearchQuery && !activeThemeTitle ? "relevance" : "date-desc";
+  const sortOption = readSortOption(searchParams.get("sort"), defaultSort);
   const filterCategoryValue = searchParams.get("filterCategory") || "";
   const requestedThemes = useMemo(
     () =>
@@ -146,13 +229,40 @@ export default function SearchResultsClient({
 
   const availableThemes = useMemo(
     () => {
-      const resultThemes = new Set(initialStamps.map((stamp) => stamp.theme));
+      const resultThemes = new Set(
+        Array.from(catalogue?.displayRecords.values() ?? [], (stamp) => stamp.theme),
+      );
       return THEME_FILTER_OPTIONS.filter((theme) => resultThemes.has(theme));
     },
-    [initialStamps],
+    [catalogue],
   );
 
-  const headingText = themeTitle || (searchQuery ? `Search: "${searchQuery}"` : "Catalog Search");
+  const searchResults = useMemo(() => {
+    if (!catalogue) return [];
+
+    if (activeThemeTitle) {
+      const normalizedTheme = activeThemeTitle.normalize("NFKC").toLowerCase();
+      const canonicalTheme = THEME_FILTER_OPTIONS.find(
+        (theme) => theme.normalize("NFKC").toLowerCase() === normalizedTheme,
+      );
+      return canonicalTheme
+        ? Array.from(catalogue.displayRecords.values())
+            .filter((stamp) => stamp.theme?.normalize("NFKC").toLowerCase() === normalizedTheme)
+            .sort((a, b) => (b.issue_date ?? "").localeCompare(a.issue_date ?? ""))
+        : [];
+    }
+
+    if (!activeSearchQuery) {
+      return Array.from(catalogue.displayRecords.values()).sort(
+        (a, b) => (b.issue_date ?? "").localeCompare(a.issue_date ?? ""),
+      );
+    }
+
+    if (activeSearchQuery.length > MAX_SEARCH_QUERY_LENGTH) return [];
+    return searchCatalogue(catalogue, activeSearchQuery);
+  }, [activeSearchQuery, activeThemeTitle, catalogue]);
+
+  const headingText = activeThemeTitle || (activeSearchQuery ? `Search: "${activeSearchQuery}"` : "Catalog Search");
 
   const filteredAndSortedStamps = useMemo(() => {
     const normalizedFilters = {
@@ -160,35 +270,28 @@ export default function SearchResultsClient({
       denomination: columnFilters.denomination.trim().toLocaleLowerCase(),
     };
 
-    const filtered = initialStamps.filter((stamp) => {
+    const filtered = searchResults.filter((stamp) => {
       if (activeView === "grid") {
-        if (!themeTitle && selectedTheme !== "all" && stamp.theme !== selectedTheme) return false;
+        if (!activeThemeTitle && selectedTheme !== "all" && stamp.theme !== selectedTheme) return false;
 
-        if (selectedEra !== "all" && stamp.issue_date) {
-          const year = Number.parseInt(stamp.issue_date.substring(0, 4), 10);
-          if (!Number.isNaN(year)) {
-            const decadeStart = Number.parseInt(selectedEra, 10);
-            if (year < decadeStart || year > decadeStart + 9) return false;
+        if (selectedEra !== "all") {
+          const year = Number.parseInt(stamp.issue_date?.substring(0, 4) ?? "", 10);
+          const decadeStart = Number.parseInt(selectedEra, 10);
+          if (!Number.isFinite(year) || year < decadeStart || year > decadeStart + 9) {
+            return false;
           }
         }
 
         if (selectedDenom !== "all") {
-          const denomination = (stamp.denomination || "").toLowerCase();
-          if (
-            (selectedDenom === "anna" && !denomination.includes("anna") && !denomination.includes("a")) ||
-            (selectedDenom === "paisa" && !denomination.includes("p") && !denomination.includes("paisa")) ||
-            (selectedDenom === "rupee" &&
-              !denomination.includes("r") &&
-              !denomination.includes("rupee") &&
-              !denomination.includes("rs"))
-          ) {
-            return false;
-          }
+          const denominationTokens = new Set(
+            (stamp.denomination?.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []),
+          );
+          if (!DENOMINATION_TERMS[selectedDenom]?.some((term) => denominationTokens.has(term))) return false;
         }
       }
 
       if (activeView === "table") {
-        const issueYear = Number.parseInt(stamp.issue_date.substring(0, 4), 10);
+        const issueYear = Number.parseInt(stamp.issue_date?.substring(0, 4) ?? "", 10);
         const hasYearRange = columnFilters.issueDateFrom || columnFilters.issueDateTo;
         if (
           hasYearRange &&
@@ -211,7 +314,10 @@ export default function SearchResultsClient({
       return true;
     });
 
-    const { field, order } = sortValue(sortOption);
+    const selectedSort = sortValue(sortOption);
+    if (!selectedSort) return filtered;
+
+    const { field, order } = selectedSort;
     return filtered.sort((a, b) => {
       const aValue = a[field] || "";
       const bValue = b[field] || "";
@@ -224,12 +330,12 @@ export default function SearchResultsClient({
     columnFilters.issueDateTo,
     columnFilters.name,
     requestedThemes,
-    initialStamps,
+    searchResults,
     selectedDenom,
     selectedEra,
     selectedTheme,
     sortOption,
-    themeTitle,
+    activeThemeTitle,
     activeView,
   ]);
 
@@ -242,6 +348,8 @@ export default function SearchResultsClient({
     pageSize === "all"
       ? filteredAndSortedStamps
       : filteredAndSortedStamps.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const noTextMatches =
+    !activeThemeTitle && Boolean(activeSearchQuery) && searchResults.length === 0;
 
   const updateParams = (
     updates: Record<string, string | null>,
@@ -268,13 +376,69 @@ export default function SearchResultsClient({
   const updateSort = (field: SortField, order: SortOrder) => {
     const sortKey = field === "issue_date" ? "date" : field;
     const nextSort = `${sortKey}-${order}` as SortOption;
-    updateParams({ sort: nextSort === "date-desc" ? null : nextSort });
+    updateParams({ sort: nextSort === defaultSort ? null : nextSort }, true);
   };
 
-  const { field: sortField, order: sortOrder } = sortValue(sortOption);
+  const selectedSort = sortValue(sortOption);
+  const sortField = selectedSort?.field ?? null;
+  const sortOrder = selectedSort?.order ?? "desc";
+
+  if (isLoading) {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-600" role="status">
+        Loading the stamp catalogue for search…
+      </section>
+    );
+  }
+
+  if (catalogueError || !catalogue) {
+    return (
+      <section className="rounded-2xl border border-red-200 bg-white p-8 text-center" role="alert">
+        <p className="text-sm text-red-700">
+          {catalogueError || "The search catalogue could not be loaded."}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setIsLoading(true);
+            setCatalogueError("");
+            setRetryCount((count) => count + 1);
+          }}
+          className="mt-4 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+        >
+          Retry
+        </button>
+      </section>
+    );
+  }
+
+  if (activeSearchQuery.length > MAX_SEARCH_QUERY_LENGTH) {
+    return (
+      <section className="rounded-2xl border border-amber-200 bg-white p-8 text-center text-sm text-amber-800" role="alert">
+        Search queries must be {MAX_SEARCH_QUERY_LENGTH} characters or fewer.
+      </section>
+    );
+  }
 
   return (
     <div className="space-y-5">
+      {catalogueRefreshError && (
+        <section
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+          role="status"
+        >
+          <p>
+            Could not refresh the search catalogue. Previously loaded results are still shown.
+          </p>
+          <button
+            type="button"
+            onClick={refreshCatalogue}
+            className="rounded-lg border border-amber-300 px-3 py-1.5 font-semibold hover:bg-amber-100"
+          >
+            Retry refresh
+          </button>
+        </section>
+      )}
       <section className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
@@ -284,6 +448,9 @@ export default function SearchResultsClient({
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
               {filteredAndSortedStamps.length}{" "}
               {filteredAndSortedStamps.length === 1 ? "stamp" : "stamps"} found
+              {activeSearchQuery && !activeThemeTitle && sortOption === "relevance" && (
+                <span> · sorted by relevance</span>
+              )}
             </p>
           </div>
           <ViewToggle
@@ -300,7 +467,7 @@ export default function SearchResultsClient({
         {activeView === "grid" && (
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex flex-wrap items-center gap-3">
-              {!themeTitle && availableThemes.length > 1 && (
+              {!activeThemeTitle && availableThemes.length > 1 && (
                 <div className="flex items-center gap-2">
                   <label htmlFor="themeSelect" className="text-slate-500 font-medium shrink-0">
                     Theme:
@@ -374,7 +541,10 @@ export default function SearchResultsClient({
               <select
                 id="sortSelect"
                 value={sortOption}
-                onChange={(event) => updateParams({ sort: event.target.value === "date-desc" ? null : event.target.value })}
+                onChange={(event) => {
+                  const nextSort = event.target.value as SortOption;
+                  updateParams({ sort: nextSort === defaultSort ? null : nextSort }, true);
+                }}
                 className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none transition cursor-pointer"
               >
                 {SORT_OPTIONS.map((option) => (
@@ -433,7 +603,9 @@ export default function SearchResultsClient({
           ))}
           {!displayedStamps.length && (
             <p className="col-span-full bg-white rounded-2xl border border-slate-200/90 p-12 text-center text-slate-500 text-sm">
-              No stamps matched the selected criteria.
+              {noTextMatches
+                ? "No stamps matched your search."
+                : "No stamps matched the selected criteria."}
             </p>
           )}
         </section>
@@ -445,6 +617,11 @@ export default function SearchResultsClient({
           filters={columnFilters}
           sortField={sortField}
           sortOrder={sortOrder}
+          emptyMessage={
+            noTextMatches
+              ? "No stamps matched your search."
+              : "No stamps matched the selected criteria."
+          }
           onFilterChange={updateColumnFilter}
           onSortChange={updateSort}
         />
