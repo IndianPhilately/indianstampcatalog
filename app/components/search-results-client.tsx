@@ -71,18 +71,30 @@ const DENOMINATION_TERMS: Record<string, string[]> = {
   rupee: ["r", "rupee", "rupees", "rs", "inr"],
 };
 
-function subscribeToDesktopChanges(callback: () => void) {
-  const mediaQuery = window.matchMedia("(min-width: 768px)");
-  mediaQuery.addEventListener("change", callback);
-  return () => mediaQuery.removeEventListener("change", callback);
+const GRID_COLUMN_BREAKPOINTS = [
+  "(min-width: 640px)",
+  "(min-width: 768px)",
+  "(min-width: 1024px)",
+] as const;
+
+function subscribeToGridColumnChanges(callback: () => void) {
+  const mediaQueries = GRID_COLUMN_BREAKPOINTS.map((breakpoint) =>
+    window.matchMedia(breakpoint),
+  );
+  mediaQueries.forEach((mediaQuery) => mediaQuery.addEventListener("change", callback));
+  return () =>
+    mediaQueries.forEach((mediaQuery) => mediaQuery.removeEventListener("change", callback));
 }
 
-function getIsDesktop() {
-  return window.matchMedia("(min-width: 768px)").matches;
+function getGridColumnCount() {
+  if (window.matchMedia("(min-width: 1024px)").matches) return 5;
+  if (window.matchMedia("(min-width: 768px)").matches) return 4;
+  if (window.matchMedia("(min-width: 640px)").matches) return 3;
+  return 2;
 }
 
-function getServerIsDesktop() {
-  return false;
+function getServerGridColumnCount() {
+  return 2;
 }
 
 function writeSearchParams(
@@ -122,11 +134,12 @@ export default function SearchResultsClient({
   const [isLoading, setIsLoading] = useState(
     () => getCachedSearchCatalogueIndex() === null,
   );
-  const isDesktop = useSyncExternalStore(
-    subscribeToDesktopChanges,
-    getIsDesktop,
-    getServerIsDesktop,
+  const gridColumnCount = useSyncExternalStore(
+    subscribeToGridColumnChanges,
+    getGridColumnCount,
+    getServerGridColumnCount,
   );
+  const isDesktop = gridColumnCount >= 4;
   const currentQuery = searchParams.toString();
   const activeSearchQuery = searchParams.get("q")?.trim() ?? searchQuery;
   const activeThemeTitle = searchParams.get("themeTitle")?.trim() || themeTitle;
@@ -203,6 +216,8 @@ export default function SearchResultsClient({
   const pageValue = Number(searchParams.get("page") || "1");
   const page = Number.isInteger(pageValue) && pageValue > 0 ? pageValue : 1;
   const pageSize = readPageSize(searchParams.get("limit"));
+  const resolvedPageSize =
+    pageSize === "auto" ? gridColumnCount * 3 : typeof pageSize === "number" ? pageSize : null;
   const selectedTheme = searchParams.get("theme") || "all";
   const selectedEra = searchParams.get("era") || "all";
   const selectedDenom = searchParams.get("denom") || "all";
@@ -340,14 +355,17 @@ export default function SearchResultsClient({
   ]);
 
   const totalPages =
-    pageSize === "all"
+    resolvedPageSize === null
       ? 1
-      : Math.max(1, Math.ceil(filteredAndSortedStamps.length / pageSize));
+      : Math.max(1, Math.ceil(filteredAndSortedStamps.length / resolvedPageSize));
   const currentPage = Math.min(page, totalPages);
   const displayedStamps =
-    pageSize === "all"
+    resolvedPageSize === null
       ? filteredAndSortedStamps
-      : filteredAndSortedStamps.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+      : filteredAndSortedStamps.slice(
+          (currentPage - 1) * resolvedPageSize,
+          currentPage * resolvedPageSize,
+        );
   const noTextMatches =
     !activeThemeTitle && Boolean(activeSearchQuery) && searchResults.length === 0;
 
@@ -358,6 +376,16 @@ export default function SearchResultsClient({
   ) => {
     writeSearchParams(currentQuery, { ...updates, ...(resetPage ? { page: null } : {}) }, historyMode);
   };
+
+  useEffect(() => {
+    if (page !== currentPage) {
+      writeSearchParams(
+        currentQuery,
+        { page: currentPage === 1 ? null : String(currentPage) },
+        "replace",
+      );
+    }
+  }, [currentPage, currentQuery, page]);
 
   const updateColumnFilter = (filters: ColumnFilters) => {
     updateParams(
@@ -627,11 +655,12 @@ export default function SearchResultsClient({
         />
       )}
 
-      {filteredAndSortedStamps.length >= 12 && (
+      {(resolvedPageSize === null || filteredAndSortedStamps.length > resolvedPageSize) && (
         <PaginationControls
           page={currentPage}
           totalPages={totalPages}
           pageSize={pageSize}
+          resolvedPageSize={resolvedPageSize ?? filteredAndSortedStamps.length}
           totalItems={filteredAndSortedStamps.length}
           onPageChange={(nextPage) => updateParams({ page: String(nextPage) })}
           onPageSizeChange={(nextSize) =>

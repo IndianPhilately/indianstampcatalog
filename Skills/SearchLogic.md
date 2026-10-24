@@ -44,6 +44,7 @@ The browser builds one MiniSearch index from the complete, versioned catalogue r
 - **Empty query:** Missing or whitespace-only `q` shows all catalogue records, newest issue dates first.
 - **Ordering:** Non-empty text search defaults to MiniSearch relevance; equal scores break by issue date descending and stable ID. An explicit sort overrides relevance. Blank and exact-theme results default to newest first.
 - **Query length:** Search queries are limited to 200 characters.
+- **Responsive pagination:** The default `Auto` page size shows three full grid rows: 6 items at 2 columns, 9 at 3, 12 at 4, or 15 at 5. Manual page sizes and `All` remain available. Calculate pagination from the effective size, show controls only when more results remain, and retain the `Showing X–Y of N` count; the final page may naturally have a partial row.
 
 The result view's filters run locally after text or exact-theme matching. Grid theme/decade/denomination and table title/category/year/denomination filters are not additional text-search fields.
 
@@ -65,7 +66,7 @@ The result view's filters run locally after text or exact-theme matching. Grid t
    - Keep both sets of values in the URL when switching views, but do not apply the hidden view's filters.
 4. Treat URL values as untrusted input. Validate view, page, page size, sort, categories, and years; keep defaults consistent with the UI. Preserve unrelated query parameters and the URL hash when updating search state.
 5. Reset the page when the primary query, an applied column filter, or page size changes. Keep URL state compatible with browser back/forward navigation.
-6. Apply sort and active-view filters before calculating the total and slicing the page. Keep pagination visibility and empty states consistent with the filtered result count.
+6. Apply sort and active-view filters before calculating the total and slicing the page. Keep pagination visibility and empty states consistent with the filtered result count. The default Auto page size is three responsive grid rows (6 / 9 / 12 / 15 for 2 / 3 / 4 / 5 columns); manual sizes remain fixed across viewport changes.
 7. Preserve the responsive contract: the table toggle/table view are desktop-only; below `md`, render the grid while retaining table-specific URL filters for later desktop use.
 8. Validate keyboard operation and accessible names/states for view toggles, sortable headers, filter dialogs, and pagination. Confirm filters can be applied, cleared, and dismissed with Escape or outside interaction.
 9. Run the narrowest relevant lint, type-check, build, or test command available. If there are no focused tests, manually verify URL reload, view switching, filter clearing, sort order, page reset, and mobile behavior.
@@ -78,7 +79,7 @@ The result view's filters run locally after text or exact-theme matching. Grid t
 - Make category filtering an exact membership check against the allowed category values.
 - Ensure changing one view's filters does not cause filters from the other view to affect its result set.
 - Clamp or normalize out-of-range page values so the displayed page and URL cannot disagree.
-- Verify pagination uses the filtered count, including the `All` page-size option, and hides controls below the configured minimum result count.
+- Verify pagination uses the filtered count, including responsive Auto and `All` page sizes, preserves manual sizes across viewport changes, and hides controls when no additional results remain.
 
 ## Completion
 

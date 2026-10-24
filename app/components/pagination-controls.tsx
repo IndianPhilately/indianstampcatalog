@@ -1,7 +1,7 @@
 "use client";
 
-export const PAGE_SIZE_OPTIONS = [12, 24, 48, "all"] as const;
-export const DEFAULT_PAGE_SIZE = 12;
+export const PAGE_SIZE_OPTIONS = ["auto", 12, 24, 48, "all"] as const;
+export const DEFAULT_PAGE_SIZE = "auto";
 
 export type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 
@@ -9,6 +9,7 @@ type PaginationControlsProps = {
   page: number;
   totalPages: number;
   pageSize: PageSize;
+  resolvedPageSize: number;
   totalItems: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: PageSize) => void;
@@ -18,6 +19,7 @@ export default function PaginationControls({
   page,
   totalPages,
   pageSize,
+  resolvedPageSize,
   totalItems,
   onPageChange,
   onPageSizeChange,
@@ -27,8 +29,8 @@ export default function PaginationControls({
     { length: Math.min(5, totalPages) },
     (_, index) => startPage + index,
   );
-  const firstItem = totalItems === 0 ? 0 : pageSize === "all" ? 1 : (page - 1) * pageSize + 1;
-  const lastItem = pageSize === "all" ? totalItems : Math.min(page * pageSize, totalItems);
+  const firstItem = totalItems === 0 ? 0 : pageSize === "all" ? 1 : (page - 1) * resolvedPageSize + 1;
+  const lastItem = pageSize === "all" ? totalItems : Math.min(page * resolvedPageSize, totalItems);
   const buttonClass =
     "rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600";
 
@@ -49,11 +51,15 @@ export default function PaginationControls({
             }}
             className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
-            {PAGE_SIZE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option === "all" ? "All" : option}
-              </option>
-            ))}
+            {PAGE_SIZE_OPTIONS.map((option) => {
+              const label =
+                option === "auto" ? `Auto (${resolvedPageSize})` : option === "all" ? "All" : option;
+              return (
+                <option key={option} value={option}>
+                  {label}
+                </option>
+              );
+            })}
           </select>
         </label>
         <span>

@@ -15,6 +15,7 @@ Use this skill when changing or debugging the Indian stamp catalogue search flow
 4. On the search page, fetch the payload and build the MiniSearch index once, retaining a separate `id -> display record` map. Reuse the in-memory index for five minutes, then revalidate it; while the search page stays open, check at least once per minute and when the tab becomes visible. Index `name`, `theme`, and `description`; store only fields required for result cards and filters (`id`, `name`, `theme`, `issue_date`, `denomination`, `image_url`). Do not duplicate full descriptions in `storeFields`.
 5. Query changes run locally against the existing index. Apply active-view filters to matching records while preserving MiniSearch score order, then apply explicit user sorting if selected, then paginate. Filter, sort, page, and view changes must not rebuild the index or refetch the catalogue.
 6. Bound query length and avoid expensive repeat work while a user types. Any debounce must apply only to local search and must not trigger network requests per keystroke.
+7. Default grid pagination to three complete rows based on the responsive column count (6 / 9 / 12 / 15 for 2 / 3 / 4 / 5 columns). Keep manual page-size options and `All`; show the effective Auto count, calculate page boundaries with that count, and display pagination only when additional results exist. A final partial row is expected when the total does not divide evenly.
 
 ### Data freshness and caching
 
