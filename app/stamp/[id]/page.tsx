@@ -8,8 +8,8 @@ import DecadeYearWidget from "@/app/components/decade-year-widget";
 import { formatDate, getStampDetails } from "@/lib/catalog";
 import { SITE_NAME, SITE_URL } from "@/lib/site-config";
 
-// Generate stamp pages on demand and revalidate them every 24 hours.
-export const revalidate = 86400;
+// Generate stamp pages on demand and revalidate them every hour.
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return [];

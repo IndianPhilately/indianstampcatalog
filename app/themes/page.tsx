@@ -7,7 +7,7 @@ export const metadata = {
     "Explore Indian commemorative stamps by theme, including history, personalities, wildlife, culture, science, and heritage.",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default async function ThemesPage() {
   const { 

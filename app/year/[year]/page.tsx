@@ -4,8 +4,8 @@ import YearStampGrid from "@/app/components/year-stamp-grid";
 import DecadeYearWidget from "@/app/components/decade-year-widget";
 import { getYearPageData } from "@/lib/catalog";
 
-// Generate year pages on demand and revalidate them every 24 hours.
-export const revalidate = 86400;
+// Generate year pages on demand and revalidate them every hour.
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return [];
